@@ -1,0 +1,51 @@
+@import url("https://fonts.googleapis.com/css2?family=Varela+Round&display=swap&family=Concert+One&family=DynaPuff:wght@400..700&family=Pangolin&family=Playpen+Sans:wght@100..800&family=Playwrite+GB+S:ital,wght@0,100..400;1,100..400&family=Short+Stack&family=Sofia+Sans:ital,wght@0,1..1000;1,1..1000&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=DM+Serif+Text:ital@0;1&family=Holtwood+One+SC&family=Parkinsans:wght@300..800&display=swap");
+@import "react-datepicker/dist/react-datepicker.css";
+
+
+@layer base {
+    html {
+        font-family: 'Sofia Sans', serif;
+    }
+}
+/* Set default font on body and root */
+html, body, #root {
+  font-family: 'Sofia Sans', serif !important;
+}
+
+.add-event .react-datepicker-wrapper {
+    width: 100%;
+}
+.add-event .react-datepicker-wrapper .react-datepicker__input-container {
+    width: 100%
+}
+.hero {
+    position: relative;
+    background-image: url('./assets/image/landing-banner-6.jpg');
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    
+}
+/* Overlay to control brightness */
+.hero::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.3); /*Adjust brightness */
+    backdrop-filter: brightness(0.9); /* Increase brightness (use values <1 for darkening) */
+    z-index: 1;
+}
+
+/* Ensure content is above the overlay */
+.hero > * {
+    position: relative;
+    z-index: 2;
+}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
