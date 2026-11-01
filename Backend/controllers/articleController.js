@@ -3,178 +3,63 @@ const ErrorHandler = require('../utils/errorHandler');
 const catchAsyncErrors = require('../middlewares/catchAsyncErrors');
 const cloudinary = require('cloudinary');
 
-exports.allArticles = catchAsyncErrors(async (req, res, next) => {
-    const { search } = req.query;
-    let query = {};
-    if (search) {
-        query.$or = [
-            { 'title': { $regex: search, $options: 'i' } },
-        ];
+// Escape special regex characters in search input
+const escapeRegex = (value) => {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
+// Build search filter
+const buildSearchFilter = (search) => {
+    if (!search || !search.trim()) return {};
+
+    return {
+        title: {
+            $regex: escapeRegex(search.trim()),
+            $options: 'i',
+        },
+    };
+};
+
+// Upload images to Cloudinary
+const uploadImages = async (images = [], folder = 'articles') => {
+    if (!images) return [];
+
+    if (typeof images === 'string') {
+        images = [images];
     }
-    const articles = await Article.find(query).sort({ createdAt: -1 });
 
-    const count = await Article.countDocuments();
-
-    res.status(200).json({
-        success: true,
-        count,
-        articles
-    })
-
-})
-exports.archivedArticles = catchAsyncErrors(async (req, res, next) => {
-    const { search } = req.query;
-    let query = {};
-    if (search) {
-        query.$or = [
-            { 'title': { $regex: search, $options: 'i' } },
-        ];
+    if (!Array.isArray(images)) {
+        throw new Error('Invalid images format');
     }
-    const articles = await Article.findOnlyDeleted(query).sort({ deletedAt: -1 });
-    res.status(200).json({
-        success: true,
-        articles
-    });
-});
-exports.createHTMLArticle = catchAsyncErrors(async (req, res, next) => {
+
+    const uploadedImages = [];
+
     try {
-        let { content, title, description } = req.body;
-        let images = [];
-        if (typeof req.body.images === "string") {
-            images.push(req.body.images);
-        } else {
-            images = req.body.images;
-        }
-
-        let imagesLinks = [];
-
-        for (let i = 0; i < images.length; i++) {
-            const result = await cloudinary.v2.uploader.upload(images[i], {
-                folder: "articlesImages",
-            });
-            imagesLinks.push({
-                public_id: result.public_id,
-                url: result.secure_url,
-            });
-        }
-
-        req.body.images = imagesLinks;
-
-        // Save article with updated content
-        const article = await Article.create({
-            title,
-            description,
-            content,
-            images: req.body.images,
-        });
-
-        res.status(201).json({
-            success: true,
-            article,
-        });
-    } catch (error) {
-        console.log("Error: ", error.message);
-        next(error);
-    }
-})
-
-
-exports.createArticle = catchAsyncErrors(async (req, res, next) => {
-    try {
-        let images = []
-        if (typeof req.body.images === 'string') {
-            images.push(req.body.images)
-        }
-        else {
-            images = req.body.images
-        }
-
-        let imagesLinks = [];
-
-        for (let i = 0; i < images.length; i++) {
-            const result = await cloudinary.v2.uploader.upload(images[i], {
-                folder: 'articles'
-            });
-
-            imagesLinks.push({
-                public_id: result.public_id,
-                url: result.secure_url
-            });
-        }
-        req.body.images = imagesLinks;
-
-        const articles = await Article.create(
-            req.body
-        );
-
-        res.status(201).json({
-            success: true,
-            articles,
-        });
-    }
-    catch (error) {
-        console.log('Error: ', error.message);
-        next(error);
-    }
-})
-
-exports.getArticleDetails = catchAsyncErrors(async (req, res, next) => {
-    const article = await Article.findById(req.params.id);
-    if (!article) {
-        return next(new ErrorHandler(`Article is not found with this id: ${req.params.id}`));
-    }
-    res.status(200).json({
-        success: true,
-        article
-    })
-})
-
-exports.updateHTMLArticle = catchAsyncErrors(async (req, res, next) => {
-    const data = req.body;
-    try {
-        let article = await Article.findById(req.params.id);
-        if (!article) {
-            return next(new ErrorHandler('Article not found', 404));
-        }
-        if (data.title === '') {
-            data.title = article.title;
-        }
-
-        if (data.description === '') {
-            data.description = article.description;
-        }
-
-        let newImages = [];
-        let existingImages = [];
-
-        if (Array.isArray(data.images)) {
-            data.images.forEach((image) => {
-                if (image.public_id) {
-                    existingImages.push(image); // Existing image
-                } else if (image.local) {
-                    newImages.push(image.url); // New base64 image
-                }
-            });
-        }
-
-        // Remove deleted images
-        for (let oldImage of article.images) {
-            if (!existingImages.some((img) => img.public_id === oldImage.public_id)) {
-                await cloudinary.v2.uploader.destroy(oldImage.public_id);
-            }
-        }
-
-        // Upload new base64 images
-        let uploadedImages = [];
-        for (let imageUri of newImages) {
-            if (!imageUri.startsWith("data:image")) {
-                console.log("Skipping invalid image format:", imageUri);
+        for (const image of images) {
+            // Keep existing Cloudinary images
+            if (
+                typeof image === 'object' &&
+                image.public_id &&
+                image.url
+            ) {
+                uploadedImages.push(image);
                 continue;
             }
 
-            const result = await cloudinary.v2.uploader.upload(imageUri, {
-                folder: "articlesImages",
-            });
+            // Extract image URL or base64 data
+            const imageUrl =
+                typeof image === 'string'
+                    ? image
+                    : image?.url;
+
+            if (!imageUrl) {
+                throw new Error('Invalid image data');
+            }
+
+            const result = await cloudinary.v2.uploader.upload(
+                imageUrl,
+                { folder }
+            );
 
             uploadedImages.push({
                 public_id: result.public_id,
@@ -182,135 +67,374 @@ exports.updateHTMLArticle = catchAsyncErrors(async (req, res, next) => {
             });
         }
 
-        // Merge and update
-        data.images = [...existingImages, ...uploadedImages];
-
-        const updatedArticle = await Article.findByIdAndUpdate(req.params.id, data, {
-            new: true,
-            runValidators: true,
-            useFindAndModify: false,
-        })
-
-        res.status(200).json({
-            success: true,
-            article: updatedArticle
-        })
+        return uploadedImages;
     } catch (error) {
-        console.log('Error: ', error.message);
-        next(error);
+        // Clean up uploads if a later upload fails
+        await deleteCloudinaryImages(uploadedImages);
+        throw error;
     }
-})
+};
 
+// Delete Cloudinary images
+const deleteCloudinaryImages = async (images = []) => {
+    if (!Array.isArray(images)) return;
 
+    await Promise.allSettled(
+        images.map(async (image) => {
+            if (!image?.public_id) return;
 
+            await cloudinary.v2.uploader.destroy(
+                image.public_id
+            );
+        })
+    );
+};
+
+exports.allArticles = catchAsyncErrors(async (req, res) => {
+    const query = buildSearchFilter(req.query.search);
+
+    const [articles, count] = await Promise.all([
+        Article.findActive(query)
+            .sort({ createdAt: -1 }),
+
+        Article.countDocuments({
+            ...query,
+            isDeleted: false,
+        }),
+    ]);
+
+    res.status(200).json({
+        success: true,
+        count,
+        articles,
+    });
+});
+
+exports.archivedArticles = catchAsyncErrors(async (req, res) => {
+    const query = buildSearchFilter(req.query.search);
+
+    const articles = await Article.findOnlyDeleted(query)
+        .sort({ deletedAt: -1 });
+
+    res.status(200).json({
+        success: true,
+        count: articles.length,
+        articles,
+    });
+});
+
+exports.createHTMLArticle = catchAsyncErrors(async (req, res) => {
+    const {
+        title,
+        description,
+        content,
+    } = req.body;
+
+    const images = await uploadImages(
+        req.body.images,
+        'articlesImages'
+    );
+
+    let article;
+
+    try {
+        article = await Article.create({
+            title,
+            description,
+            content,
+            images,
+        });
+    } catch (error) {
+        await deleteCloudinaryImages(images);
+        throw error;
+    }
+
+    res.status(201).json({
+        success: true,
+        article,
+    });
+});
+
+exports.createArticle = catchAsyncErrors(async (req, res) => {
+    const images = await uploadImages(
+        req.body.images,
+        'articles'
+    );
+
+    let article;
+
+    try {
+        article = await Article.create({
+            ...req.body,
+            images,
+        });
+    } catch (error) {
+        await deleteCloudinaryImages(images);
+        throw error;
+    }
+
+    res.status(201).json({
+        success: true,
+        articles: article,
+    });
+});
+
+exports.getArticleDetails = catchAsyncErrors(async (req, res, next) => {
+    const article = await Article.findById(req.params.id);
+
+    if (!article) {
+        return next(
+            new ErrorHandler(
+                `Article not found with ID: ${req.params.id}`,
+                404
+            )
+        );
+    }
+
+    res.status(200).json({
+        success: true,
+        article,
+    });
+});
+
+exports.updateHTMLArticle = catchAsyncErrors(async (req, res, next) => {
+    const article = await Article.findById(req.params.id);
+
+    if (!article) {
+        return next(
+            new ErrorHandler('Article not found', 404)
+        );
+    }
+
+    const updateData = { ...req.body };
+
+    if (updateData.title === '') {
+        updateData.title = article.title;
+    }
+
+    if (updateData.description === '') {
+        updateData.description = article.description;
+    }
+
+    // Do not allow API clients to change soft-delete fields
+    delete updateData.isDeleted;
+    delete updateData.deletedAt;
+
+    let newImages = null;
+
+    if (req.body.images !== undefined) {
+        const requestedImages = Array.isArray(req.body.images)
+            ? req.body.images
+            : [req.body.images];
+
+        const existingImages = requestedImages.filter(
+            image =>
+                typeof image === 'object' &&
+                image.public_id &&
+                image.url
+        );
+
+        const imagesToUpload = requestedImages.filter(
+            image =>
+                typeof image === 'string' ||
+                (typeof image === 'object' && !image.public_id && image.url)
+        );
+
+        const uploadedImages = await uploadImages(
+            imagesToUpload,
+            'articlesImages'
+        );
+
+        newImages = [
+            ...existingImages,
+            ...uploadedImages,
+        ];
+
+        updateData.images = newImages;
+    }
+
+    let updatedArticle;
+
+    try {
+        updatedArticle = await Article.findByIdAndUpdate(
+            req.params.id,
+            { $set: updateData },
+            {
+                new: true,
+                runValidators: true,
+            }
+        );
+    } catch (error) {
+        if (newImages !== null) {
+            const oldIds = new Set(
+                article.images.map(image => image.public_id)
+            );
+
+            await deleteCloudinaryImages(
+                newImages.filter(image => !oldIds.has(image.public_id))
+            );
+        }
+
+        throw error;
+    }
+
+    // Delete removed images only after successful update
+    if (newImages !== null) {
+        const retainedIds = new Set(
+            newImages.map(image => image.public_id)
+        );
+
+        const removedImages = article.images.filter(
+            image => !retainedIds.has(image.public_id)
+        );
+
+        await deleteCloudinaryImages(removedImages);
+    }
+
+    res.status(200).json({
+        success: true,
+        article: updatedArticle,
+    });
+});
 
 exports.updateArticle = catchAsyncErrors(async (req, res, next) => {
-    console.log(req.body);
+    const article = await Article.findById(req.params.id);
+
+    if (!article) {
+        return next(
+            new ErrorHandler('Article not found', 404)
+        );
+    }
+
+    const updateData = { ...req.body };
+
+    if (updateData.title === '') {
+        updateData.title = article.title;
+    }
+
+    if (updateData.description === '') {
+        updateData.description = article.description;
+    }
+
+    delete updateData.isDeleted;
+    delete updateData.deletedAt;
+
+    let newImages = null;
+
+    // Only update images if the request contains an images property
+    if (req.body.images !== undefined) {
+        newImages = await uploadImages(
+            req.body.images,
+            'articles'
+        );
+
+        updateData.images = newImages;
+    }
+
     try {
-        let article = await Article.findById(req.params.id);
-        if (!article) {
-            return next(new ErrorHandler('Article not found', 404));
-        }
-        let images = [];
-        if (Array.isArray(req.body.images)) {
-            images = req.body.images.map(image => typeof image === 'object' && image.url ? image.url : image);
-        }
-        else if (typeof req.body.images === 'string') {
-            images.push(req.body.images);
-        }
-
-        if (images.length > 0) {
-            for (let i = 0; i < article.images.length; i++) {
-                await cloudinary.v2.uploader.destroy(article.images[i].public_id);
-            }
-            let imagesLinks = [];
-            for (let i = 0; i < images.length; i++) {
-                const result = await cloudinary.v2.uploader.upload(images[i], {
-                    folder: 'articles',
-                });
-                imagesLinks.push({
-                    public_id: result.public_id,
-                    url: result.secure_url,
-                })
-            }
-            req.body.images = imagesLinks
-        }
-
-        if (req.body.description === '') {
-            req.body.description = article.description;
-        }
-
-        if (req.body.images.length === 0) {
-            article = await Article.findByIdAndUpdate(req.params.id, {
-                title: req.body.title,
-                description: req.body.description,
-            }, {
+        const updatedArticle = await Article.findByIdAndUpdate(
+            req.params.id,
+            { $set: updateData },
+            {
                 new: true,
                 runValidators: true,
-                useFindAndModify: false,
-            })
-        }
-        else {
-            article = await Article.findByIdAndUpdate(req.params.id, req.body, {
-                new: true,
-                runValidators: true,
-                useFindAndModify: false,
-            })
-        }
+            }
+        );
 
+        // Clean up old images after successful update
+        if (newImages !== null) {
+            const retainedIds = new Set(
+                newImages.map(image => image.public_id)
+            );
+
+            const removedImages = article.images.filter(
+                image => !retainedIds.has(image.public_id)
+            );
+
+            await deleteCloudinaryImages(removedImages);
+        }
 
         res.status(200).json({
             success: true,
-            article
-        })
+            article: updatedArticle,
+        });
     } catch (error) {
-        console.log('Error: ', error.message);
-        next(error);
-    }
-})
+        // Remove newly uploaded images if database update fails
+        if (newImages !== null) {
+            const oldIds = new Set(
+                article.images.map(image => image.public_id)
+            );
 
+            await deleteCloudinaryImages(
+                newImages.filter(image => !oldIds.has(image.public_id))
+            );
+        }
+
+        throw error;
+    }
+});
 
 exports.deleteArticle = catchAsyncErrors(async (req, res, next) => {
-    const article = await Article.findByIdAndDelete(req.params.id);
+    const article = await Article.findOneAndDelete({
+        _id: req.params.id,
+        isDeleted: false,
+    });
 
     if (!article) {
-        return next(new ErrorHandler(`Article is not found with this id: ${req.params.id}`))
+        return next(
+            new ErrorHandler(
+                `Article not found with ID: ${req.params.id}`,
+                404
+            )
+        );
     }
-    for (let i = 0; i < article.images.length; i++) {
-        const result = await cloudinary.v2.uploader.destroy(article.images[i].public_id)
-    }
+
+    await deleteCloudinaryImages(article.images);
 
     res.status(200).json({
         success: true,
-        message: 'Article is deleted'
-    })
-})
+        message: 'Article permanently deleted',
+    });
+});
 
 exports.softDeleteArticle = catchAsyncErrors(async (req, res, next) => {
-    const article = await Article.softDeleteById(req.params.id);
+    const cleanId = req.params.id.trim();
+
+    const article = await Article.softDeleteById(cleanId);
 
     if (!article) {
-        return next(new ErrorHandler(`Article is not found with this id: ${req.params.id}`))
+        return next(
+            new ErrorHandler(
+                `Article not found with ID: ${cleanId}`,
+                404
+            )
+        );
     }
 
     res.status(200).json({
         success: true,
-        message: 'Article is soft deleted'
-    })
-})
+        message: 'Article successfully archived',
+        article,
+    });
+});
 
 exports.restoreArticle = catchAsyncErrors(async (req, res, next) => {
-    const article = await Article.restoreById(req.params.id);
+    const cleanId = req.params.id.trim();
+
+    const article = await Article.restoreById(cleanId);
 
     if (!article) {
-        return res.status(404).json({
-            success: false,
-            message: `Article with id ${req.params.id} not found`
-        });
+        return next(
+            new ErrorHandler(
+                `Archived article not found with ID: ${cleanId}`,
+                404
+            )
+        );
     }
 
-    return res.status(200).json({
+    res.status(200).json({
         success: true,
-        message: 'Article is restored'
+        message: 'Article successfully restored',
+        article,
     });
 });

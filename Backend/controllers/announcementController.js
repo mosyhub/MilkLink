@@ -1,276 +1,317 @@
+
 const Announcement = require('../models/announcement');
 const ErrorHandler = require('../utils/errorHandler');
 const catchAsyncErrors = require('../middlewares/catchAsyncErrors');
 const cloudinary = require('cloudinary');
 
-exports.allAnnouncements = catchAsyncErrors(async (req, res, next) => {
-    const { search } = req.query;
-    let query = {};
-    if (search) {
-        query.$or = [
-            { 'title': { $regex: search, $options: 'i' } },
-        ];
+// Upload images to Cloudinary
+const uploadImages = async (images = []) => {
+    if (!images) return [];
+
+    if (typeof images === 'string') {
+        images = [images];
     }
-    const articles = await Announcement.find(query).sort({ createdAt: -1 });
-    const count = await Announcement.countDocuments();
+
+    if (!Array.isArray(images)) {
+        throw new Error('Invalid images format');
+    }
+
+    const uploadedImages = [];
+
+    for (const image of images) {
+        if (typeof image === 'object' && image.url) {
+            uploadedImages.push(image);
+            continue;
+        }
+
+        const result = await cloudinary.v2.uploader.upload(image, {
+            folder: 'articles',
+        });
+
+        uploadedImages.push({
+            public_id: result.public_id,
+            url: result.secure_url,
+        });
+    }
+
+    return uploadedImages;
+};
+
+// Delete images from Cloudinary
+const deleteCloudinaryImages = async (images = []) => {
+    for (const image of images) {
+        if (image.public_id) {
+            try {
+                await cloudinary.v2.uploader.destroy(image.public_id);
+            } catch (error) {
+                console.error(
+                    'Cloudinary deletion error:',
+                    error.message
+                );
+            }
+        }
+    }
+};
+
+// Build search filter
+const buildSearchFilter = (search) => {
+    if (!search) return {};
+
+    return {
+        title: {
+            $regex: search,
+            $options: 'i',
+        },
+    };
+};
+
+// Get all active announcements
+exports.allAnnouncements = catchAsyncErrors(async (req, res) => {
+    const { search } = req.query;
+
+    const query = buildSearchFilter(search);
+
+    const [articles, count] = await Promise.all([
+        Announcement.findActive(query)
+            .sort({ createdAt: -1 }),
+
+        Announcement.countDocuments({
+            ...query,
+            isDeleted: false,
+        }),
+    ]);
 
     res.status(200).json({
         success: true,
         count,
-        articles
-    })
+        articles,
+    });
+});
 
-})
+exports.createHTMLAnnouncement = catchAsyncErrors(async (req, res) => {
+    const { title, description } = req.body;
 
-exports.createHTMLArticle = catchAsyncErrors(async (req, res, next) => {
-    try {
-        let {title, description } = req.body;
-        let images = [];
-        if (typeof req.body.images === 'string') {
-            images.push(req.body.images)
-        }
-        else {
-            images = req.body.images
-        }
+    const images = await uploadImages(req.body.images);
 
-        let imagesLinks = [];
+    const article = await Announcement.create({
+        ...req.body,
+        title,
+        description,
+        images,
+    });
 
-        for (let i = 0; i < images.length; i++) {
-            const result = await cloudinary.v2.uploader.upload(images[i], {
-                folder: 'articles'
-            });
+    res.status(201).json({
+        success: true,
+        article,
+    });
+});
 
-            imagesLinks.push({
-                public_id: result.public_id,
-                url: result.secure_url
-            });
-        }
-        req.body.images = imagesLinks;
+// Create announcement
+exports.createAnnouncement = catchAsyncErrors(async (req, res) => {
+    const images = await uploadImages(req.body.images);
 
-        // Save article with updated content
-        const article = await Announcement.create(
-            req.body
-        );
+    const article = await Announcement.create({
+        ...req.body,
+        images,
+    });
 
-        res.status(201).json({
-            success: true,
-            article,
-        });
-    } catch (error) {
-        console.log("Error: ", error.message);
-        next(error);
-    }
-})
+    res.status(201).json({
+        success: true,
+        articles: article,
+    });
+});
 
-
-exports.createArticle = catchAsyncErrors(async (req, res, next) => {
-    try {
-        let images = []
-        if (typeof req.body.images === 'string') {
-            images.push(req.body.images)
-        }
-        else {
-            images = req.body.images
-        }
-
-        let imagesLinks = [];
-
-        for (let i = 0; i < images.length; i++) {
-            const result = await cloudinary.v2.uploader.upload(images[i], {
-                folder: 'articles'
-            });
-
-            imagesLinks.push({
-                public_id: result.public_id,
-                url: result.secure_url
-            });
-        }
-        req.body.images = imagesLinks;
-
-        const articles = await Announcement.create(
-            req.body
-        );
-
-        res.status(201).json({
-            success: true,
-            articles,
-        });
-    }
-    catch (error) {
-        console.log('Error: ', error.message);
-        next(error);
-    }
-})
-
-exports.getArticleDetails = catchAsyncErrors(async (req, res, next) => {
+// Get announcement details
+exports.getAnnouncementDetails = catchAsyncErrors(async (req, res, next) => {
     const article = await Announcement.findById(req.params.id);
+
     if (!article) {
-        return next(new ErrorHandler(`Article is not found with this id: ${req.params.id}`));
+        return next(
+            new ErrorHandler(
+                `Announcement not found with ID: ${req.params.id}`,
+                404
+            )
+        );
     }
+
     res.status(200).json({
         success: true,
-        article
-    })
-})
+        article,
+    });
+});
 
-exports.updateHTMLArticle = catchAsyncErrors(async (req, res, next) => {
+exports.updateHTMLAnnouncement = catchAsyncErrors(async (req, res, next) => {
+    let article = await Announcement.findById(req.params.id);
 
-    try {
-        let article = await Announcement.findById(req.params.id);
-        if (!article) {
-            return next(new ErrorHandler('Article not found', 404));
-        }
-        if (req.body.title === '') {
-            req.body.title = article.title;
-        }
+    if (!article) {
+        return next(new ErrorHandler('Announcement not found', 404));
+    }
 
-        if (req.body.description === '') {
-            req.body.description = article.description;
-        }
+    const updateData = {
+        ...req.body,
+    };
 
+    if (updateData.title === '') {
+        updateData.title = article.title;
+    }
 
-        article = await Announcement.findByIdAndUpdate(req.params.id, req.body, {
+    if (updateData.description === '') {
+        updateData.description = article.description;
+    }
+
+    delete updateData.isDeleted;
+    delete updateData.deletedAt;
+
+    article = await Announcement.findByIdAndUpdate(
+        req.params.id,
+        { $set: updateData },
+        {
             new: true,
             runValidators: true,
-            useFindAndModify: false,
-        })
+        }
+    );
 
-        res.status(200).json({
-            success: true,
-            article
-        })
-    } catch (error) {
-        console.log('Error: ', error.message);
-        next(error);
+    res.status(200).json({
+        success: true,
+        article,
+    });
+});
+
+// Update announcement
+exports.updateAnnouncement = catchAsyncErrors(async (req, res, next) => {
+    let article = await Announcement.findById(req.params.id);
+
+    if (!article) {
+        return next(new ErrorHandler('Announcement not found', 404));
     }
-})
 
+    const updateData = {
+        ...req.body,
+    };
 
+    let newImages = null;
 
-
-exports.updateArticle = catchAsyncErrors(async (req, res, next) => {
-    console.log(req.body);
-    try {
-        let article = await Announcement.findById(req.params.id);
-        if (!article) {
-            return next(new ErrorHandler('Article not found', 404));
-        }
-        let images = [];
-        if (Array.isArray(req.body.images)) {
-            images = req.body.images.map(image => typeof image === 'object' && image.url ? image.url : image);
-        }
-        else if (typeof req.body.images === 'string') {
-            images.push(req.body.images);
-        }
-
-        if (images.length > 0) {
-            for (let i = 0; i < article.images.length; i++) {
-                await cloudinary.v2.uploader.destroy(article.images[i].public_id);
-            }
-            let imagesLinks = [];
-            for (let i = 0; i < images.length; i++) {
-                const result = await cloudinary.v2.uploader.upload(images[i], {
-                    folder: 'articles',
-                });
-                imagesLinks.push({
-                    public_id: result.public_id,
-                    url: result.secure_url,
-                })
-            }
-            req.body.images = imagesLinks
-        }
-
-        if (req.body.description === '') {
-            req.body.description = article.description;
-        }
-
-        if (req.body.images.length === 0) {
-            article = await Announcement.findByIdAndUpdate(req.params.id, {
-                title: req.body.title,
-                description: req.body.description,
-            }, {
-                new: true,
-                runValidators: true,
-                useFindAndModify: false,
-            })
-        }
-        else {
-            article = await Announcement.findByIdAndUpdate(req.params.id, req.body, {
-                new: true,
-                runValidators: true,
-                useFindAndModify: false,
-            })
-        }
-
-
-        res.status(200).json({
-            success: true,
-            article
-        })
-    } catch (error) {
-        console.log('Error: ', error.message);
-        next(error);
+    // Only replace images when images are supplied
+    if (req.body.images !== undefined) {
+        newImages = await uploadImages(req.body.images);
+        updateData.images = newImages;
     }
-})
 
+    if (updateData.description === '') {
+        updateData.description = article.description;
+    }
 
-exports.deleteArticle = catchAsyncErrors(async (req, res, next) => {
+    if (updateData.title === '') {
+        updateData.title = article.title;
+    }
+
+    // Prevent modifying soft-delete fields through this endpoint
+    delete updateData.isDeleted;
+    delete updateData.deletedAt;
+
+    article = await Announcement.findByIdAndUpdate(
+        req.params.id,
+        { $set: updateData },
+        {
+            new: true,
+            runValidators: true,
+        }
+    );
+
+    // Delete old images only after successful database update
+    if (newImages !== null) {
+        await deleteCloudinaryImages(
+            article.images.filter(
+                oldImage => !newImages.some(
+                    newImage => newImage.public_id === oldImage.public_id
+                )
+            )
+        );
+    }
+
+    res.status(200).json({
+        success: true,
+        article,
+    });
+});
+
+// Permanently delete
+exports.deleteAnnouncement = catchAsyncErrors(async (req, res, next) => {
     const article = await Announcement.findByIdAndDelete(req.params.id);
 
     if (!article) {
-        return next(new ErrorHandler(`Article is not found with this id: ${req.params.id}`))
+        return next(
+            new ErrorHandler(
+                `Announcement not found with ID: ${req.params.id}`,
+                404
+            )
+        );
     }
-    for (let i = 0; i < article.images.length; i++) {
-        const result = await cloudinary.v2.uploader.destroy(article.images[i].public_id)
-    }
+
+    await deleteCloudinaryImages(article.images);
 
     res.status(200).json({
         success: true,
-        message: 'Article is deleted'
-    })
-})
+        message: 'Announcement permanently deleted',
+    });
+});
 
-exports.softDeleteArticle = catchAsyncErrors(async (req, res, next) => {
-    const article = await Announcement.softDeleteById(req.params.id.trim());
+// Soft-delete 
+exports.softDeleteAnnouncement = catchAsyncErrors(async (req, res, next) => {
+    const cleanId = req.params.id.trim();
+
+    const article = await Announcement.softDeleteById(cleanId);
 
     if (!article) {
-        return next(new ErrorHandler(`Article is not found with this id: ${req.params.id}`))
+        return next(
+            new ErrorHandler(
+                `Announcement not found with ID: ${cleanId}`,
+                404
+            )
+        );
     }
 
     res.status(200).json({
         success: true,
-        message: 'Article is soft deleted'
-    })
-})
+        message: 'Announcement successfully archived',
+        article,
+    });
+});
 
-exports.restoreArticle = catchAsyncErrors(async (req, res, next) => {
-    const cleanId = req.params.id.replace(/\s+/g, '');
+// Restore
+exports.restoreAnnouncement = catchAsyncErrors(async (req, res, next) => {
+    const cleanId = req.params.id.trim();
 
     const article = await Announcement.restoreById(cleanId);
 
     if (!article) {
-        return res.status(404).json({
-            success: false,
-            message: `Article with id ${cleanId} not found`
-        });
+        return next(
+            new ErrorHandler(
+                `Deleted article not found with ID: ${cleanId}`,
+                404
+            )
+        );
     }
 
-    return res.status(200).json({
-        success: true,
-        message: 'Article is restored'
-    });
-});
-exports.archivedArticles = catchAsyncErrors(async (req, res, next) => {
-    const { search } = req.query;
-    let query = {};
-    if (search) {
-        query.$or = [
-            { 'title': { $regex: search, $options: 'i' } },
-        ];
-    }
-    const articles = await Announcement.findOnlyDeleted(query).sort({ deletedAt: -1 });
     res.status(200).json({
         success: true,
-        articles
+        message: 'Announcement successfully restored',
+        article,
+    });
+});
+
+//Archived
+exports.archivedAnnouncements = catchAsyncErrors(async (req, res) => {
+    const { search } = req.query;
+
+    const query = buildSearchFilter(search);
+
+    const articles = await Announcement.findOnlyDeleted(query)
+        .sort({ deletedAt: -1 });
+
+    res.status(200).json({
+        success: true,
+        count: articles.length,
+        articles,
     });
 });

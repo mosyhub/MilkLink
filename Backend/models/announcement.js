@@ -1,28 +1,39 @@
 const mongoose = require('mongoose');
-const softDeletePlugin = require('./plugins/softDelete')
-const announcementSchema = mongoose.Schema({
-    title: {
-        type: String,
-        required: true
-    },
-    description: {
-        type: String,
-        required: true
-    },
-    images: [
-        {
-            public_id: {
-                type: String,
+const softDeletePlugin = require('./plugins/softDelete');
+
+const announcementSchema = new mongoose.Schema(
+    {
+        title: {
+            type: String,
+            required: [true, 'Announcement title is required'],
+            trim: true,
+        },
+
+        description: {
+            type: String,
+            required: [true, 'Announcement description is required'],
+        },
+
+        images: [
+            {
+                public_id: {
+                    type: String,
+                },
+                url: {
+                    type: String,
+                },
             },
-            url: {
-                type: String,
-            }
-        }
-    ],
-    createdAt: {
-        type: Date,
-        default: Date.now
+        ],
+    },
+    {
+        timestamps: true,
     }
-});
-announcementSchema.plugin(softDeletePlugin)
-module.exports = mongoose.model('Announcement', announcementSchema);  
+);
+
+// Soft delete
+announcementSchema.plugin(softDeletePlugin);
+
+module.exports = mongoose.model(
+    'Announcement',
+    announcementSchema
+);

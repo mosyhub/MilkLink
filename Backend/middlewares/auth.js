@@ -1,35 +1,57 @@
-const catchAsyncErrors = require("./catchAsyncErrors");
-const ErrorHandler = require('../utils/errorHandler');
+const catchAsyncErrors = require('./catchAsyncErrors');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+const ErrorHandler = require('../utils/errorHandler');
 
-// Checks if user is authenticated or not
+// Check if user is authenticated
 exports.isAuthenticatedUser = catchAsyncErrors(async (req, res, next) => {
     let token;
 
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    if (req.headers.authorization?.startsWith('Bearer ')) {
         token = req.headers.authorization.split(' ')[1];
-    } else if (req.cookies && req.cookies.accessToken) {
+    } else if (req.cookies?.accessToken) {
         token = req.cookies.accessToken;
     }
-    
-    if (!token) return res.status(401).json({ message: 'Unauthorized' });
+
+    if (!token) {
+        return next(new ErrorHandler('Please login to access this resource', 401));
+    }
+
+    let decoded;
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded;
-        next();
-    } catch (err) {
-        return res.status(403).json({ message: 'Token is invalid or expired' });
+        decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (error) {
+        return next(new ErrorHandler('Invalid or expired token', 401));
     }
+
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+        return next(new ErrorHandler('User no longer exists', 401));
+    }
+
+    req.user = user;
+
+    return next();
 });
 
-// Handling User roles
+// Check user roles
 exports.authorizeRoles = (...roles) => {
     return (req, res, next) => {
-        if (!roles.includes(req.user.role)) {
-            return res.status(403).json({ message: `Role (${req.user.role}) is not allowed to access this resource` });
+        if (!req.user) {
+            return next(new ErrorHandler('Please login first', 401));
         }
-        next(); // Proceed to the next middleware or route handler
-    }
+
+        if (!roles.includes(req.user.role)) {
+            return next(
+                new ErrorHandler(
+                    `Role (${req.user.role}) is not allowed to access this resource`,
+                    403
+                )
+            );
+        }
+
+        return next();
+    };
 };

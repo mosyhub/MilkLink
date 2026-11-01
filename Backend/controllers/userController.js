@@ -5,56 +5,93 @@ const sendToken = require('../utils/jwtToken');
 const sendEmail = require('../utils/sendEmail');
 const crypto = require('crypto');
 const cloudinary = require('cloudinary');
+const validator = require('validator');
+const { validatePasswordPolicy } = require('../utils/passwordPolicy');
 
 
-//Register a user => /api/v1/register
+// Register a user => /api/v1/register
 exports.registerUser = catchAsyncErrors(async (req, res, next) => {
-    const { firstName, lastName, middleName, email, phoneNumber, role, pass } = req.body;
-    let user;
-    let password = pass || `${firstName.replace(/\s+/g, "").toLowerCase()}${lastName.replace(/\s+/g, "").toLowerCase()}`;
+    const { firstName, lastName, middleName, username, email, phoneNumber, phone, role, pass, password } = req.body;
 
-    console.log("password: ", password);
+    const userPassword = password || pass;
+    const userPhone = phoneNumber || phone;
+    const cleanUsername = username ? username.trim().toLowerCase() : '';
+    const cleanEmail = (email && email.trim() !== '') ? email.trim().toLowerCase() : undefined;
+
+    // Validate required fields
+    if (!firstName || !firstName.trim()) {
+        return next(new ErrorHandler('Please enter first name', 400));
+    }
+    if (!lastName || !lastName.trim()) {
+        return next(new ErrorHandler('Please enter last name', 400));
+    }
+    if (!cleanUsername) {
+        return next(new ErrorHandler('Please enter a username', 400));
+    }
+    if (cleanUsername.length < 4 || cleanUsername.length > 30) {
+        return next(new ErrorHandler('Username must be between 4 and 30 characters', 400));
+    }
+    if (!/^[a-zA-Z0-9_.-]+$/.test(cleanUsername)) {
+        return next(new ErrorHandler('Username can only contain alphanumeric characters, underscores, dots, or hyphens', 400));
+    }
+    if (!userPhone || !userPhone.trim()) {
+        return next(new ErrorHandler('Please enter a valid phone number', 400));
+    }
+
+    // Enforce secure password policy
+    const passwordCheck = validatePasswordPolicy(userPassword);
+    if (!passwordCheck.isValid) {
+        return next(new ErrorHandler(passwordCheck.message, 400));
+    }
+
+    // Check if username already exists
+    const existingUsername = await User.findOne({ username: cleanUsername, isDeleted: false });
+    if (existingUsername) {
+        return next(new ErrorHandler('Username is already taken. Please choose another.', 400));
+    }
+
+    // Check if optional email is provided and already taken
+    if (cleanEmail) {
+        if (!validator.isEmail(cleanEmail)) {
+            return next(new ErrorHandler('Please enter a valid email address', 400));
+        }
+        const existingEmail = await User.findOne({ email: cleanEmail, isDeleted: false });
+        if (existingEmail) {
+            return next(new ErrorHandler('Email is already registered. Please use another or log in.', 400));
+        }
+    }
+
+    const userData = {
+        name: {
+            first: firstName.trim(),
+            middle: (middleName && middleName.trim()) || "",
+            last: lastName.trim(),
+        },
+        username: cleanUsername,
+        password: userPassword,
+        phone: userPhone.trim(),
+        role: role || 'User',
+    };
+
+    if (cleanEmail) {
+        userData.email = cleanEmail;
+    }
     if (req.body.employeeID) {
-        user = await User.create({
-            name: {
-                first: firstName,
-                middle: middleName || "",
-                last: lastName,
-            },
-            email,
-            password,
-            phone: phoneNumber,
-            role,
-            employeeID: req.body.employeeID
-        })
-    }
-    else {
-        user = await User.create({
-            name: {
-                first: firstName,
-                middle: middleName || "",
-                last: lastName,
-            },
-            email,
-            password,
-            phone: phoneNumber,
-            role,
-        })
+        userData.employeeID = req.body.employeeID;
     }
 
-    res.status(200).json({
-        success: true,
-        message: "Registered successfully"
-    })
-    
+    const user = await User.create(userData);
+
+    sendToken(user, 201, req, res);
 })
 
 
 // Login User => /api/v1/login
 exports.loginUser = catchAsyncErrors(async (req, res, next) => {
-    const { email, employeeID, password } = req.body;
+    const { email, username, identifier, employeeID, password } = req.body;
     const { emp } = req.query;
     let user;
+
     if (emp) {
         if (!employeeID || !password) {
             return res.status(400).json({ success: false, message: "Please enter employeeID and password" });
@@ -66,14 +103,22 @@ exports.loginUser = catchAsyncErrors(async (req, res, next) => {
             return res.status(401).json({ success: false, message: "Invalid employeeID or password" });
         }
     } else {
-        if (!email || !password) {
-            return res.status(400).json({ success: false, message: "Please enter email and password" });
+        const loginIdentifier = (identifier || username || email || '').trim();
+        if (!loginIdentifier || !password) {
+            return res.status(400).json({ success: false, message: "Please enter your username/email and password" });
         }
 
-        user = await User.findOne({ email }).select('+password');
+        const cleanIdentifier = loginIdentifier.toLowerCase();
+        user = await User.findOne({
+            $or: [
+                { username: cleanIdentifier },
+                { email: cleanIdentifier }
+            ],
+            isDeleted: false
+        }).select('+password');
 
         if (!user) {
-            return res.status(401).json({ success: false, message: "Invalid email or password" });
+            return res.status(401).json({ success: false, message: "Invalid username/email or password" });
         }
     }
 
@@ -83,7 +128,7 @@ exports.loginUser = catchAsyncErrors(async (req, res, next) => {
         if (emp) {
             return res.status(401).json({ success: false, message: "Invalid employee id or password" });
         }
-        return res.status(401).json({ success: false, message: "Invalid email or password" });
+        return res.status(401).json({ success: false, message: "Invalid username/email or password" });
     }
 
     sendToken(user, 200, req, res);
@@ -147,7 +192,13 @@ exports.resetPassword = catchAsyncErrors(async (req, res, next) => {
     }
 
     if (req.body.password !== req.body.confirmPassword) {
-        return next(new ErrorHandler('Password does not match'), 400);
+        return next(new ErrorHandler('Password does not match', 400));
+    }
+
+    // Enforce secure password policy on reset
+    const resetPasswordCheck = validatePasswordPolicy(req.body.password);
+    if (!resetPasswordCheck.isValid) {
+        return next(new ErrorHandler(resetPasswordCheck.message, 400));
     }
 
     // Setup new Password
@@ -182,10 +233,16 @@ exports.updatePassword = catchAsyncErrors(async (req, res, next) => {
         return next(new ErrorHandler('Old password is incorrect', 400));
     }
 
+    // Enforce secure password policy on update
+    const updatePasswordCheck = validatePasswordPolicy(req.body.password);
+    if (!updatePasswordCheck.isValid) {
+        return next(new ErrorHandler(updatePasswordCheck.message, 400));
+    }
+
     user.password = req.body.password;
     await user.save();
 
-    sendToken(user, 200, res);
+    sendToken(user, 200, req, res);
 
 })
 

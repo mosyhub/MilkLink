@@ -1,15 +1,27 @@
 const sendToken = (user, statusCode, req, res) => {
+    // Gracefully handle calls like sendToken(user, statusCode, res)
+    if (!res && req && req.status) {
+        res = req;
+        req = null;
+    }
+
+    if (!res && req && req.status) {
+        res = req;
+        req = null;
+    }
+
     const accessToken = user.getAccessToken();
     const refreshToken = user.getRefreshToken();
 
-    const isMobile = req.headers['x-client-type'] === 'mobile';
+    const isMobile = req && req.headers && req.headers['x-client-type'] === 'mobile';
 
     if (isMobile) {
         res.setHeader('Authorization', `Bearer ${accessToken}`);
-        res.status(statusCode).json({
+        return res.status(statusCode).json({
             success: true,
+            message: statusCode === 201 ? 'Registered successfully' : 'Login successful',
             token: accessToken,
-            refreshToken, // Optional: only if mobile needs to store/refresh manually
+            refreshToken,
             user
         });
     } else {
@@ -27,12 +39,14 @@ const sendToken = (user, statusCode, req, res) => {
             secure: true
         });
 
-        res.status(statusCode).json({
+        return res.status(statusCode).json({
             success: true,
+            message: statusCode === 201 ? 'Registered successfully' : 'Login successful',
+            token: accessToken,
             user
         });
     }
 };
 
-
-module.exports = sendToken
+module.exports = sendToken;
+module.exports = sendToken;

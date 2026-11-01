@@ -1,65 +1,137 @@
-// softDelete.js
 module.exports = function softDeletePlugin(schema, options = {}) {
+  // Soft delete fields
   schema.add({
-    isDeleted: { type: Boolean, default: false },
-    deletedAt: { type: Date, default: null },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   });
 
-  schema.pre(/^find/, function (next) {
-    if (this.getOptions().skipDeletedFilter) {
-      return next(); // Don't apply any filter
+  // query middleware (auto exclude deleted documents)
+  schema.pre(/^find/, function () {
+    const queryOptions = this.getOptions();
+    const filter = this.getFilter();
+
+    // Allow authorized queries to bypass the filter
+    if (queryOptions.skipDeletedFilter) {
+      return;
     }
 
-    if (!this.getFilter().includeDeleted) {
+    // Include deleted documents when requested
+    if (filter.includeDeleted === true) {
+      delete filter.includeDeleted;
+      this.setQuery(filter);
+      return;
+    }
+
+    // Apply default filter
+    if (filter.isDeleted === undefined) {
       this.where({ isDeleted: false });
-    } else {
-      this.setQuery({ ...this.getFilter(), includeDeleted: undefined });
     }
-
-    next();
   });
 
-
-  // --- Static Methods ---
-
-  // Soft delete a single document
-  schema.statics.softDeleteById = async function (id) {
-    return this.findByIdAndUpdate(id, {
-      isDeleted: true,
-      deletedAt: new Date(),
-    });
-  };
-
-  schema.statics.restoreById = async function (id) {
+  // soft delete single document
+  schema.statics.softDeleteById = function (id) {
     return this.findOneAndUpdate(
-      { _id: id, isDeleted: true }, // Find only soft-deleted
-      { isDeleted: false, deletedAt: null },
-      { new: true } // Return the updated document
-    ).setOptions({ skipDeletedFilter: true }); // ✅ Bypass soft-delete filter
+      { _id: id, isDeleted: false },
+      {
+        $set: {
+          isDeleted: true,
+          deletedAt: new Date(),
+        },
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
   };
 
-
-  // Soft delete multiple documents
-  schema.statics.softDeleteMany = async function (filter = {}) {
-    return this.updateMany(filter, {
-      isDeleted: true,
-      deletedAt: new Date(),
-    });
+  // restore single document
+  schema.statics.restoreById = function (id) {
+    return this.findOneAndUpdate(
+      { _id: id, isDeleted: true },
+      {
+        $set: {
+          isDeleted: false,
+          deletedAt: null,
+        },
+      },
+      {
+        new: true,
+        runValidators: true,
+        skipDeletedFilter: true,
+      }
+    );
   };
 
-  // Restore multiple documents
-  schema.statics.restoreMany = async function (filter = {}) {
-    return this.updateMany(filter, {
-      isDeleted: false,
-      deletedAt: null,
-    });
+  // soft delete multiple document
+  schema.statics.softDeleteMany = function (filter = {}) {
+    return this.updateMany(
+      {
+        ...filter,
+        isDeleted: false,
+      },
+      {
+        $set: {
+          isDeleted: true,
+          deletedAt: new Date(),
+        },
+      },
+      {
+        runValidators: true,
+      }
+    );
   };
 
-  // Find documents including soft-deleted ones
+  // restore multiple documents
+  schema.statics.restoreMany = function (filter = {}) {
+    return this.updateMany(
+      {
+        ...filter,
+        isDeleted: true,
+      },
+      {
+        $set: {
+          isDeleted: false,
+          deletedAt: null,
+        },
+      },
+      {
+        runValidators: true,
+      }
+    );
+  };
+
+  // retrieve documents
+
+  // Find all documents, including deleted ones
   schema.statics.findIncludingDeleted = function (filter = {}) {
-    return this.find({ ...filter, includeDeleted: true });
+    return this.find(filter).setOptions({
+      skipDeletedFilter: true,
+    });
   };
+
+  // Find only soft-deleted documents
   schema.statics.findOnlyDeleted = function (filter = {}) {
-    return this.find({ ...filter, isDeleted: true }).setOptions({ skipDeletedFilter: true });
+    return this.find({
+      ...filter,
+      isDeleted: true,
+    }).setOptions({
+      skipDeletedFilter: true,
+    });
+  };
+
+  // Find active documents only
+  schema.statics.findActive = function (filter = {}) {
+    return this.find({
+      ...filter,
+      isDeleted: false,
+    });
   };
 };

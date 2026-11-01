@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const softDeletePlugin = require('./plugins/softDelete');
+const { validatePasswordPolicy } = require('../utils/passwordPolicy');
 
 const userSchema = new mongoose.Schema({
     name: {
@@ -27,14 +28,24 @@ const userSchema = new mongoose.Schema({
     },
     username: {
         type: String,
+        required: [true, 'Please enter username'],
         trim: true,
-        minlength: [6, 'Username must be at least 6 characters'],
-        maxlength: [30, 'Username cannot exceed 30 characters']
+        lowercase: true,
+        minlength: [4, 'Username must be at least 4 characters'],
+        maxlength: [30, 'Username cannot exceed 30 characters'],
+        match: [/^[a-zA-Z0-9_.-]+$/, 'Username can only contain alphanumeric characters, underscores, dots, or hyphens']
     },
     email: {
         type: String,
         trim: true,
-        validate: [validator.isEmail, 'Please enter a valid email address']
+        lowercase: true,
+        validate: {
+            validator: function (v) {
+                if (!v || v.trim() === '') return true;
+                return validator.isEmail(v);
+            },
+            message: 'Please enter a valid email address'
+        }
     },
     employeeID: {
         type: Number,
@@ -45,7 +56,15 @@ const userSchema = new mongoose.Schema({
     password: {
         type: String,
         required: [true, 'Please enter your password'],
-        minlength: [6, 'Your password must be at least 6 characters'],
+        validate: {
+            validator: function (v) {
+                if (!v) return false;
+                if (/^\$2[abxy]\$\d{2}\$[./A-Za-z0-9]{53}$/.test(v)) return true;
+                const { isValid } = validatePasswordPolicy(v);
+                return isValid;
+            },
+            message: 'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.'
+        },
         select: false
     },
     phone: {
@@ -82,12 +101,12 @@ const userSchema = new mongoose.Schema({
 });
 
 // Unique email/username, but only among non-deleted users,
-// so a soft-deleted user doesn't block re-registration with the same email.
+// and only if email is a non-empty string so multiple null/undefined/missing emails don't conflict.
 userSchema.index(
     { email: 1 },
     {
         unique: true,
-        partialFilterExpression: { isDeleted: false, email: { $type: 'string' } }
+        partialFilterExpression: { isDeleted: false, email: { $type: 'string', $gt: '' } }
     }
 );
 userSchema.index(
@@ -105,13 +124,12 @@ userSchema.virtual('fullName').get(function () {
 });
 
 // Encrypting password before saving user
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', async function () {
     if (!this.isModified('password')) {
-        return next();
+        return;
     }
 
     this.password = await bcrypt.hash(this.password, 10);
-    next();
 });
 
 // Never leak sensitive fields in API responses

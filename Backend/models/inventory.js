@@ -97,14 +97,13 @@ inventorySchema.virtual("_fridgeType").get(function () {
 });
 
 // Middleware to fetch _fridgeType before validation
-inventorySchema.pre("validate", async function (next) {
-  if (!this.fridge) return next();
+inventorySchema.pre("validate", async function () {
+  if (!this.fridge) return;
 
   const fridge = await mongoose.model("Fridge").findById(this.fridge);
-  if (!fridge) return next(new Error("Fridge not found"));
+  if (!fridge) throw new Error("Fridge not found");
 
   this._fridgeType = fridge.type; // Store fridge type in a temporary field
-  next();
 });
 inventorySchema.plugin(softDeletePlugin)
 module.exports = mongoose.model("Inventory", inventorySchema);
