@@ -4,6 +4,7 @@ import '../../core/constants/app_colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/donor_provider.dart';
 import '../auth/login_screen.dart';
+import '../staff/staff_dashboard_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -158,6 +159,50 @@ class ProfileScreen extends StatelessWidget {
               ),
 
             const SizedBox(height: 20),
+
+            // Staff Portal Tile (if staff or admin)
+            if (user?.isStaff == true || user?.isAdmin == true) ...[
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primaryNavy.withOpacity(0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.softBlue,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.dashboard_customize, color: AppColors.primaryNavy, size: 22),
+                  ),
+                  title: const Text(
+                    'Staff Dashboard',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.primaryNavy),
+                  ),
+                  subtitle: const Text(
+                    'Manage Donors, Recipients & Requests',
+                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  ),
+                  trailing: const Icon(Icons.chevron_right, color: AppColors.primaryNavy),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const StaffDashboardScreen()),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
 
             // App Section
             Container(

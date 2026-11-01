@@ -182,6 +182,193 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Flow A: Direct Self-Registration (Donor or Patient)
+  Future<bool> selfRegister({
+    required String firstName,
+    required String lastName,
+    String? middleName,
+    required String username,
+    required String phone,
+    required String password,
+    required String profileType, // 'Donor' or 'Patient'
+    required Map<String, dynamic> homeAddress,
+    DateTime? birthday,
+    String? donorType,
+    String? occupation,
+    String? patientName,
+    String? motherName,
+    String? patientType,
+    String? age,
+    String? aog,
+  }) async {
+    _status = AuthStatus.loading;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final Map<String, dynamic> payload = {
+        'firstName': firstName.trim(),
+        'lastName': lastName.trim(),
+        'username': username.trim().toLowerCase(),
+        'phone': phone.trim(),
+        'password': password,
+        'profileType': profileType,
+        'home_address': homeAddress,
+      };
+
+      if (middleName != null && middleName.trim().isNotEmpty) {
+        payload['middleName'] = middleName.trim();
+      }
+
+      if (profileType == 'Donor') {
+        if (birthday != null) payload['birthday'] = birthday.toIso8601String();
+        if (donorType != null) payload['donorType'] = donorType;
+        if (occupation != null) payload['occupation'] = occupation;
+      } else if (profileType == 'Patient') {
+        if (patientName != null) payload['patientName'] = patientName;
+        if (motherName != null) payload['motherName'] = motherName;
+        if (patientType != null) payload['patientType'] = patientType;
+        if (age != null) payload['age'] = age;
+        if (aog != null) payload['aog'] = aog;
+      }
+
+      final response = await ApiClient.post(
+        ApiConstants.selfRegister,
+        data: payload,
+        requiresAuth: false,
+      );
+
+      if (response['success'] == true) {
+        if (response['token'] != null) {
+          final token = response['token'] as String;
+          final userJson = response['user'];
+          _user = UserModel.fromJson(userJson);
+          await SessionManager.saveSession(
+            token: token,
+            refreshToken: response['refreshToken'],
+            userId: _user!.id,
+            role: _user!.role,
+          );
+        }
+        _status = AuthStatus.authenticated;
+        notifyListeners();
+        return true;
+      } else {
+        throw ApiException(response['message'] ?? 'Self-registration failed');
+      }
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      _status = AuthStatus.error;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _errorMessage = 'An error occurred during registration: $e';
+      _status = AuthStatus.error;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Step 1 of Claiming: Verify Claim Token or Scanned QR Data with the Backend
+  Future<Map<String, dynamic>?> verifyClaimToken(String tokenOrQrData) async {
+    _status = AuthStatus.loading;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await ApiClient.post(
+        ApiConstants.verifyClaim,
+        data: {'claimToken': tokenOrQrData.trim()},
+        requiresAuth: false,
+      );
+
+      if (response['success'] == true && response['valid'] == true) {
+        _status = AuthStatus.unauthenticated;
+        notifyListeners();
+        return response as Map<String, dynamic>;
+      } else {
+        _errorMessage = response['message'] ?? 'Invalid claim token';
+        _status = AuthStatus.error;
+        notifyListeners();
+        return null;
+      }
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      _status = AuthStatus.error;
+      notifyListeners();
+      return null;
+    } catch (e) {
+      _errorMessage = 'Verification failed: $e';
+      _status = AuthStatus.error;
+      notifyListeners();
+      return null;
+    }
+  }
+
+  /// Step 2 of Claiming: Bind Existing Record using Token & Credentials
+  Future<bool> claimRecord({
+    required String claimToken,
+    required String username,
+    required String password,
+    String? email,
+    String? phone,
+    String? firstName,
+    String? lastName,
+    String? profileType,
+  }) async {
+    _status = AuthStatus.loading;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final Map<String, dynamic> payload = {
+        'claimToken': claimToken.trim().toUpperCase(),
+        'username': username.trim().toLowerCase(),
+        'password': password,
+      };
+      if (email != null && email.trim().isNotEmpty) payload['email'] = email.trim().toLowerCase();
+      if (phone != null && phone.trim().isNotEmpty) payload['phone'] = phone.trim();
+      if (firstName != null && firstName.trim().isNotEmpty) payload['firstName'] = firstName.trim();
+      if (lastName != null && lastName.trim().isNotEmpty) payload['lastName'] = lastName.trim();
+      if (profileType != null && profileType.isNotEmpty) payload['profileType'] = profileType;
+
+      final response = await ApiClient.post(
+        ApiConstants.claimRecord,
+        data: payload,
+        requiresAuth: false,
+      );
+
+      if (response['success'] == true) {
+        if (response['token'] != null) {
+          final token = response['token'] as String;
+          final userJson = response['user'];
+          _user = UserModel.fromJson(userJson);
+          await SessionManager.saveSession(
+            token: token,
+            refreshToken: response['refreshToken'],
+            userId: _user!.id,
+            role: _user!.role,
+          );
+        }
+        _status = AuthStatus.authenticated;
+        notifyListeners();
+        return true;
+      } else {
+        throw ApiException(response['message'] ?? 'Claiming record failed');
+      }
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      _status = AuthStatus.error;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _errorMessage = 'An error occurred while claiming record: $e';
+      _status = AuthStatus.error;
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<void> logout() async {
     await SessionManager.clearSession();
     _user = null;

@@ -58,6 +58,19 @@ class ChildInfo {
       ageUnit: unit,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      if (dateOfBirth != null) 'dateOfBirth': dateOfBirth!.toIso8601String(),
+      if (birthWeight != null) 'birth_weight': birthWeight,
+      if (ageValue != null)
+        'age': {
+          'value': ageValue,
+          'unit': ageUnit ?? 'months',
+        },
+    };
+  }
 }
 
 class DonationRecord {
@@ -110,8 +123,21 @@ class DonorModel {
   final String donorType;
   final String eligibility;
   final bool verified;
+  // Populated when user account is linked
+  final String? userName;
+  final String? userId;
+  final String? staffId;
+  final String? staffName;
+  final Map<String, dynamic>? screening;
+  final bool isDeleted;
+  final DateTime? deletedAt;
+  final DateTime? createdAt;
   final List<ChildInfo> children;
   final List<DonationRecord> donations;
+  // The actual name fields from the Donor schema (name.first / name.middle / name.last)
+  final String? nameFirst;
+  final String? nameMiddle;
+  final String? nameLast;
 
   DonorModel({
     required this.id,
@@ -122,9 +148,23 @@ class DonorModel {
     required this.donorType,
     required this.eligibility,
     required this.verified,
+    this.userName,
+    this.userId,
+    this.staffId,
+    this.staffName,
+    this.screening,
+    this.isDeleted = false,
+    this.deletedAt,
+    this.createdAt,
     required this.children,
     required this.donations,
+    this.nameFirst,
+    this.nameMiddle,
+    this.nameLast,
   });
+
+  bool get isClaimed => userId != null && userId!.isNotEmpty;
+  String get claimStatus => isClaimed ? 'Claimed / Linked' : 'Unclaimed';
 
   bool get isEligible =>
       eligibility.toLowerCase() == 'eligible' || eligibility.toLowerCase() == 'accepted';
@@ -132,24 +172,110 @@ class DonorModel {
   double get totalDonatedVolume =>
       donations.fold(0.0, (acc, item) => acc + item.totalVolume);
 
+  /// Priority: linked user name > donor's own name > child reference > ID fallback
+  String get displayName {
+    if (userName?.isNotEmpty == true) return userName!;
+    final first = nameFirst?.trim() ?? '';
+    final last = nameLast?.trim() ?? '';
+    if (first.isNotEmpty || last.isNotEmpty) {
+      return '$first $last'.trim();
+    }
+    if (children.isNotEmpty && children.first.name.isNotEmpty) {
+      return 'Mother of ${children.first.name}';
+    }
+    return 'Donor #$id';
+  }
+
   factory DonorModel.fromJson(Map<String, dynamic> json) {
     final rawChildren = json['children'] as List? ?? [];
     final rawDonations = json['donations'] as List? ?? [];
 
+    // Parse linked User account
+    String? uName;
+    String? uId;
+    if (json['user'] is Map) {
+      final u = json['user'] as Map<String, dynamic>;
+      uId = u['_id']?.toString();
+      if (u['name'] is Map) {
+        uName = '${u['name']['first'] ?? ''} ${u['name']['last'] ?? ''}'.trim();
+      } else if (u['username'] != null) {
+        uName = u['username']?.toString();
+      }
+    } else if (json['user'] is String) {
+      uId = json['user'] as String;
+    }
+
+    // Parse responsible staff
+    String? sName;
+    String? sId;
+    if (json['staff'] is Map) {
+      final s = json['staff'] as Map<String, dynamic>;
+      sId = s['_id']?.toString();
+      if (s['name'] is Map) {
+        sName = '${s['name']['first'] ?? ''} ${s['name']['last'] ?? ''}'.trim();
+      } else if (s['username'] != null) {
+        sName = s['username']?.toString();
+      }
+    } else if (json['staff'] is String) {
+      sId = json['staff'] as String;
+    }
+
+    // Parse the donor's real name (name.first / name.middle / name.last from schema)
+    String? nFirst;
+    String? nMiddle;
+    String? nLast;
+    if (json['name'] is Map) {
+      final nm = json['name'] as Map<String, dynamic>;
+      nFirst = nm['first']?.toString();
+      nMiddle = nm['middle']?.toString();
+      nLast = nm['last']?.toString();
+    }
+
     return DonorModel(
-      id: json['_id'] ?? '',
+      id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
       homeAddress: json['home_address'] is Map<String, dynamic>
           ? HomeAddress.fromJson(json['home_address'])
           : HomeAddress(street: '', brgy: '', city: ''),
-      birthday: json['birthday'] != null ? DateTime.tryParse(json['birthday']) : null,
-      contactNumber: json['contact_number'],
-      occupation: json['occupation'],
-      donorType: json['donorType'] ?? 'Community',
-      eligibility: json['eligibility'] ?? 'Pending',
-      verified: json['verified'] ?? false,
-      children: rawChildren.map((c) => ChildInfo.fromJson(c)).toList(),
-      donations: rawDonations.map((d) => DonationRecord.fromJson(d)).toList(),
+      birthday: json['birthday'] != null ? DateTime.tryParse(json['birthday'].toString()) : null,
+      contactNumber: (json['contact_number'] ?? json['contactNumber'] ?? json['phone'])?.toString(),
+      occupation: json['occupation']?.toString(),
+      donorType: json['donorType']?.toString() ?? 'Community',
+      eligibility: json['eligibility']?.toString() ?? 'Pending Review',
+      verified: json['verified'] == true,
+      userName: uName,
+      userId: uId,
+      staffId: sId,
+      staffName: sName,
+      screening: json['screening'] is Map<String, dynamic>
+          ? json['screening'] as Map<String, dynamic>
+          : null,
+      isDeleted: json['isDeleted'] == true,
+      deletedAt: json['deletedAt'] != null ? DateTime.tryParse(json['deletedAt'].toString()) : null,
+      createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt'].toString()) : null,
+      children: rawChildren.map((c) => ChildInfo.fromJson(c as Map<String, dynamic>)).toList(),
+      donations: rawDonations.map((d) => DonationRecord.fromJson(d as Map<String, dynamic>)).toList(),
+      nameFirst: nFirst,
+      nameMiddle: nMiddle,
+      nameLast: nLast,
     );
   }
-}
 
+  Map<String, dynamic> toJson() {
+    return {
+      'name': {
+        'first': nameFirst ?? '',
+        'middle': nameMiddle ?? '',
+        'last': nameLast ?? '',
+      },
+      'home_address': homeAddress.toJson(),
+      'donorType': donorType,
+      'eligibility': eligibility,
+      'verified': verified,
+      if (contactNumber != null) 'contact_number': contactNumber,
+      if (occupation != null) 'occupation': occupation,
+      if (birthday != null) 'birthday': birthday!.toIso8601String(),
+      if (userId != null) 'user': userId,
+      'children': children.map((c) => c.toJson()).toList(),
+    };
+  }
+}

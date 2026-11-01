@@ -4,6 +4,7 @@ import '../core/constants/app_colors.dart';
 import '../providers/auth_provider.dart';
 import 'auth/login_screen.dart';
 import 'main_navigation_screen.dart';
+import 'staff/staff_dashboard_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -29,10 +30,18 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     if (authProvider.isAuthenticated) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
-      );
+      final user = authProvider.user;
+      if (user != null && (user.isStaff || user.isAdmin)) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const StaffDashboardScreen()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+        );
+      }
     } else {
       Navigator.pushReplacement(
         context,

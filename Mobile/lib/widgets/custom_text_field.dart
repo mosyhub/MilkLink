@@ -13,6 +13,8 @@ class CustomTextField extends StatelessWidget {
   final int maxLines;
   final bool readOnly;
   final VoidCallback? onTap;
+  final ValueChanged<String>? onChanged;
+  final TextCapitalization textCapitalization;
 
   const CustomTextField({
     Key? key,
@@ -27,6 +29,8 @@ class CustomTextField extends StatelessWidget {
     this.maxLines = 1,
     this.readOnly = false,
     this.onTap,
+    this.onChanged,
+    this.textCapitalization = TextCapitalization.none,
   }) : super(key: key);
 
   @override
@@ -51,6 +55,8 @@ class CustomTextField extends StatelessWidget {
           maxLines: maxLines,
           readOnly: readOnly,
           onTap: onTap,
+          onChanged: onChanged,
+          textCapitalization: textCapitalization,
           style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
           decoration: InputDecoration(
             hintText: hint,

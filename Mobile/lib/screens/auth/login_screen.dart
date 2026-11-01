@@ -5,7 +5,8 @@ import '../../providers/auth_provider.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../main_navigation_screen.dart';
-import 'register_screen.dart';
+import '../staff/staff_dashboard_screen.dart';
+import 'claim_record_screen.dart';
 import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -40,10 +41,18 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (success) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
-      );
+      final user = authProvider.user;
+      if (user != null && (user.isStaff || user.isAdmin)) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const StaffDashboardScreen()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+        );
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -161,31 +170,69 @@ class _LoginScreenState extends State<LoginScreen> {
                     isLoading: authProvider.status == AuthStatus.loading,
                     onPressed: _handleLogin,
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 28),
 
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        "Don't have an account? ",
-                        style: TextStyle(color: AppColors.textSecondary),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const RegisterScreen()),
-                          );
-                        },
-                        child: const Text(
-                          'Register as Mother/Donor',
+                  // Claim / Setup Account via QR or Token Card (No public self-registration)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.softBlue,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppColors.primaryBlue.withOpacity(0.35)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: const [
+                            Icon(Icons.qr_code_scanner, color: AppColors.primaryNavy, size: 22),
+                            SizedBox(width: 8),
+                            Text(
+                              'First time here from the Milk Bank?',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primaryNavy,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'If you were screened by Pasig Human Milk Bank staff, link your medical record to activate your mobile account using your QR Code or Token.',
                           style: TextStyle(
-                            color: AppColors.accentPink,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            color: AppColors.textPrimary,
+                            height: 1.35,
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 14),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryNavy,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              elevation: 0,
+                            ),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const ClaimRecordScreen()),
+                              );
+                            },
+                            icon: const Icon(Icons.qr_code_2, size: 20),
+                            label: const Text(
+                              'Link Profile / Setup Account via QR or Token',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
