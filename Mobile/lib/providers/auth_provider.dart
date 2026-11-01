@@ -52,7 +52,8 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> login(String email, String password) async {
+  /// Login using a username OR email as the identifier.
+  Future<bool> login(String identifier, String password) async {
     _status = AuthStatus.loading;
     _errorMessage = null;
     notifyListeners();
@@ -60,7 +61,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       final response = await ApiClient.post(
         ApiConstants.login,
-        data: {'email': email.trim(), 'password': password},
+        data: {'identifier': identifier.trim(), 'password': password},
         requiresAuth: false,
       );
 
@@ -95,11 +96,13 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Register a new user. [email] is optional.
   Future<bool> register({
     required String firstName,
     required String lastName,
     String? middleName,
-    required String email,
+    required String username,
+    String? email,
     required String phone,
     required String password,
   }) async {
@@ -108,23 +111,48 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final Map<String, dynamic> payload = {
+        'firstName': firstName.trim(),
+        'lastName': lastName.trim(),
+        'username': username.trim().toLowerCase(),
+        'phoneNumber': phone.trim(),
+        'password': password,
+        'role': 'User',
+      };
+
+      if (middleName != null && middleName.trim().isNotEmpty) {
+        payload['middleName'] = middleName.trim();
+      }
+      if (email != null && email.trim().isNotEmpty) {
+        payload['email'] = email.trim().toLowerCase();
+      }
+
       final response = await ApiClient.post(
         ApiConstants.register,
-        data: {
-          'firstName': firstName.trim(),
-          'lastName': lastName.trim(),
-          'middleName': middleName?.trim(),
-          'email': email.trim(),
-          'phoneNumber': phone.trim(),
-          'pass': password,
-          'role': 'User',
-        },
+        data: payload,
         requiresAuth: false,
       );
 
       if (response['success'] == true) {
-        // Automatically attempt login after successful registration
-        return await login(email, password);
+        // Registration returns a token directly; parse user from response.
+        if (response['token'] != null) {
+          final token = response['token'] as String;
+          final userJson = response['user'];
+          _user = UserModel.fromJson(userJson);
+
+          await SessionManager.saveSession(
+            token: token,
+            refreshToken: response['refreshToken'],
+            userId: _user!.id,
+            role: _user!.role,
+          );
+
+          _status = AuthStatus.authenticated;
+          notifyListeners();
+          return true;
+        }
+        // Fallback: auto-login using username after successful registration
+        return await login(username.trim().toLowerCase(), password);
       } else {
         throw ApiException(response['message'] ?? 'Registration failed');
       }
@@ -161,4 +189,3 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 }
-

@@ -1,7 +1,7 @@
-# TCHMB Mobile Application (Flutter)
-### Taguig City Human Milk Bank — Donors & Mothers App
+# MilkLink Mobile Application (Flutter)
+### Pasig City Human Milk Bank — Donors & Mothers App
 
-A cross-platform Flutter mobile application designed specifically for **Mothers and Breast Milk Donors** of the **Taguig City Human Milk Bank (TCHMB)**.
+A cross-platform Flutter mobile application designed specifically for **Mothers and Breast Milk Donors** of the **Pasig City Human Milk Bank (MilkLink)**.
 
 ---
 
@@ -15,7 +15,7 @@ A cross-platform Flutter mobile application designed specifically for **Mothers 
 
 2. **Donor Medical Screening & Application**:
    - Multi-step questionnaire for donor qualification (Mother's address/category, Infant details, and health lifestyle history).
-   - Instant submission to the TCHMB backend eligibility pipeline.
+   - Instant submission to the MilkLink backend eligibility pipeline.
 
 3. **Donation Tracker & History**:
    - View cumulative donated volume (mL).
@@ -23,7 +23,7 @@ A cross-platform Flutter mobile application designed specifically for **Mothers 
    - Live eligibility status badge (`ELIGIBLE`, `PENDING`, `VERIFIED`).
 
 4. **Milk Letting Events & Schedules**:
-   - View upcoming Taguig milk letting activities, venues, and timings.
+   - View upcoming Pasig milk letting activities, venues, and timings.
    - Event reminders and details.
 
 5. **Educational Resources & Announcements**:
@@ -45,7 +45,7 @@ Mobile/
 │   ├── core/
 │   │   ├── constants/
 │   │   │   ├── api_constants.dart         # Base URL & API endpoints
-│   │   │   └── app_colors.dart            # TCHMB brand colors & palette
+│   │   │   └── app_colors.dart            # MilkLink brand colors & palette
 │   │   ├── network/
 │   │   │   └── api_client.dart            # HTTP client with mobile headers & auth injection
 │   │   └── utils/
@@ -81,10 +81,10 @@ Mobile/
 
 ## 🚀 How to Run the App
 
-### 1. Start the TCHMB Backend
+### 1. Start the MilkLink Backend
 In your terminal, navigate to `Backend/` and start the server:
 ```bash
-cd "c:\Users\mosy\Desktop\TCHMB\Source Codes\Backend"
+cd "c:\Users\mosy\Desktop\MilkLink\Source Codes\Backend"
 npm run dev
 # Server will run on http://localhost:4000
 ```
@@ -99,7 +99,7 @@ npm run dev
 ### 3. Run Flutter
 In your terminal:
 ```bash
-cd "c:\Users\mosy\Desktop\TCHMB\Source Codes\Mobile"
+cd "c:\Users\mosy\Desktop\MilkLink\Source Codes\Mobile"
 flutter pub get
 flutter run
 ```

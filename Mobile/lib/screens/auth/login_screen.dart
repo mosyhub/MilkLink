@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/constants/api_constants.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/utils/session_manager.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
@@ -19,13 +17,13 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _identifierController = TextEditingController(); // username or email
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _identifierController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -35,7 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final success = await authProvider.login(
-      _emailController.text,
+      _identifierController.text.trim(),
       _passwordController.text,
     );
 
@@ -56,65 +54,12 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _showServerSettings() {
-    final urlController = TextEditingController(text: ApiConstants.baseUrl);
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('API Server URL'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Set the backend API host. Use 10.0.2.2:4000 for Android Emulator, or your PC IP (e.g. 192.168.1.X:4000) for physical phone.',
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: urlController,
-              decoration: const InputDecoration(
-                labelText: 'Base URL',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              ApiConstants.baseUrl = urlController.text.trim();
-              await SessionManager.saveCustomBaseUrl(ApiConstants.baseUrl);
-              if (mounted) Navigator.pop(ctx);
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined, color: AppColors.textSecondary),
-            onPressed: _showServerSettings,
-            tooltip: 'Server Settings',
-          ),
-        ],
-      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -141,7 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 24),
                   const Center(
                     child: Text(
-                      'Welcome to TCHMB',
+                      'Welcome to MilkLink',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -152,24 +97,29 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 8),
                   const Center(
                     child: Text(
-                      'Taguig City Human Milk Bank Donor Portal',
+                      'Pasig City Human Milk Bank Donor Portal',
                       style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
                     ),
                   ),
                   const SizedBox(height: 32),
+
+                  // Username or Email
                   CustomTextField(
-                    label: 'Email Address',
-                    hint: 'e.g. mother@example.com',
-                    controller: _emailController,
+                    label: 'Username or Email',
+                    hint: 'Enter your username or email',
+                    controller: _identifierController,
                     keyboardType: TextInputType.emailAddress,
-                    prefixIcon: const Icon(Icons.email_outlined, color: AppColors.textSecondary),
+                    prefixIcon: const Icon(Icons.person_outline, color: AppColors.textSecondary),
                     validator: (val) {
-                      if (val == null || val.trim().isEmpty) return 'Please enter your email';
-                      if (!val.contains('@')) return 'Enter a valid email';
+                      if (val == null || val.trim().isEmpty) {
+                        return 'Please enter your username or email';
+                      }
                       return null;
                     },
                   ),
                   const SizedBox(height: 18),
+
+                  // Password
                   CustomTextField(
                     label: 'Password',
                     hint: 'Enter your password',
@@ -185,10 +135,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     validator: (val) {
                       if (val == null || val.isEmpty) return 'Please enter your password';
-                      if (val.length < 6) return 'Password must be at least 6 characters';
                       return null;
                     },
                   ),
+
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
@@ -205,12 +155,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
+
                   CustomButton(
                     text: 'Sign In',
                     isLoading: authProvider.status == AuthStatus.loading,
                     onPressed: _handleLogin,
                   ),
                   const SizedBox(height: 24),
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -244,4 +196,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-

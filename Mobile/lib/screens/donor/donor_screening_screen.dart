@@ -21,7 +21,7 @@ class _DonorScreeningScreenState extends State<DonorScreeningScreen> {
   // Step 1: Mother Personal info
   final _streetController = TextEditingController();
   final _brgyController = TextEditingController();
-  final _cityController = TextEditingController(text: 'Taguig City');
+  final _cityController = TextEditingController(text: 'Pasig City');
   DateTime? _motherBirthday;
   String _donorType = 'Community';
 
@@ -33,7 +33,7 @@ class _DonorScreeningScreenState extends State<DonorScreeningScreen> {
   // Step 3: Medical Questionnaire
   final Map<String, String> _questionnaire = {
     "Have you donated breast milk before? (Nakapagbigay ka na ba ng iyong gatas dati?)": "No",
-    "Will you be allowed by your husband to donate your breast milk to the Taguig City Human Milk Bank? (Papayagan ka ba ng iyong asawa na magbigay ng iyong gatas sa Taguig City Human Milk Bank?)": "Yes",
+    "Will you be allowed by your husband to donate your breast milk to the Pasig City Human Milk Bank? (Papayagan ka ba ng iyong asawa na magbigay ng iyong gatas sa Pasig City Human Milk Bank?)": "Yes",
     "Have you for any reason been deferred as a milk donor? (Ikaw ba ay natangihan na magbigay ng iyong gatas / breastmilk?)": "No",
     "Did you have a normal pregnancy and delivery for your most recent pregnancy? (Normal ba ang panganganak mo sa huli mong anak?)": "Yes",
     "Do you have any acute or chronic infection, systemic disorders, tuberculosis or history of hepatitis? (Mayroon ka bang kahit anong impeksyon o sakit? Nagkaroon ng sakit sa atay dati?)": "No",
@@ -95,7 +95,7 @@ class _DonorScreeningScreenState extends State<DonorScreeningScreen> {
             ],
           ),
           content: const Text(
-            'Your donor screening application has been submitted successfully! Taguig City Human Milk Bank staff will review your answers.',
+            'Your donor screening application has been submitted successfully! Pasig City Human Milk Bank staff will review your answers.',
           ),
           actions: [
             ElevatedButton(
@@ -249,7 +249,7 @@ class _DonorScreeningScreenState extends State<DonorScreeningScreen> {
                 items: const [
                   DropdownMenuItem(value: 'Community', child: Text('Community Donor')),
                   DropdownMenuItem(value: 'Private', child: Text('Private Donor')),
-                  DropdownMenuItem(value: 'Employee', child: Text('Taguig City Employee')),
+                  DropdownMenuItem(value: 'Employee', child: Text('Pasig City Employee')),
                   DropdownMenuItem(value: 'Network Office/Agency', child: Text('Network Office/Agency')),
                 ],
                 onChanged: (val) {

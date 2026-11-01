@@ -60,7 +60,7 @@ class DonorProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Build the standard TCHMB fields payload
+      // Build the standard MilkLink fields payload
       final List<Map<String, dynamic>> fields = [
         {'label': 'street', 'value': street, 'type': 'INPUT_TEXT'},
         {'label': 'brgy', 'value': brgy, 'type': 'INPUT_TEXT'},

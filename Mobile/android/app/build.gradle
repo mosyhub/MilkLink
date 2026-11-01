@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace "ph.gov.taguig.tchmb.mobile"
+    namespace "ph.gov.Pasig.milklink.mobile"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -14,7 +14,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "ph.gov.taguig.tchmb.mobile"
+        applicationId = "ph.gov.Pasig.milklink.mobile"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

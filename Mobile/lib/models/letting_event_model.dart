@@ -15,10 +15,10 @@ class EventVenue {
 
   factory EventVenue.fromJson(Map<String, dynamic> json) {
     return EventVenue(
-      name: json['name'] ?? 'Taguig City Human Milk Bank',
+      name: json['name'] ?? 'Pasig City Human Milk Bank',
       street: json['street'] ?? '',
       barangay: json['barangay'] ?? '',
-      city: json['city'] ?? 'Taguig City',
+      city: json['city'] ?? 'Pasig City',
     );
   }
 }
@@ -75,7 +75,7 @@ class LettingEventModel {
           : EventDetails(date: DateTime.now(), time: EventTime(start: '', end: '')),
       venue: json['venue'] is Map<String, dynamic>
           ? EventVenue.fromJson(json['venue'])
-          : EventVenue(name: 'Taguig City Milk Bank', street: '', barangay: '', city: ''),
+          : EventVenue(name: 'Pasig City Milk Bank', street: '', barangay: '', city: ''),
     );
   }
 }

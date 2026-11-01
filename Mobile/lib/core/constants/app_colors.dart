@@ -1,12 +1,26 @@
 import 'package:flutter/material.dart';
 
+/// App color palette matching Pasig City's official blue theme.
+///
+/// Primary: Pasig Navy Blue (#004080)
+/// Accent: Pasig Cyan/Sky Blue (#0284C7)
+/// Soft Backgrounds: Ice/Sky Blue (#E0F2FE)
 class AppColors {
-  // Brand Colors
+  // Pasig City Brand Colors (Blue Theme)
   static const Color primaryNavy = Color(0xFF004080);
   static const Color primaryDark = Color(0xFF002855);
-  static const Color accentPink = Color(0xFFE91E63);
-  static const Color softPink = Color(0xFFFCE4EC);
-  static const Color pinkTint = Color(0xFFFDF2F8);
+  static const Color primaryBlue = Color(0xFF0284C7);
+  static const Color primaryLight = Color(0xFF38BDF8);
+
+  // Pasig Accent & Soft Blue Palette
+  static const Color accentBlue = Color(0xFF0284C7);
+  static const Color softBlue = Color(0xFFE0F2FE);
+  static const Color blueTint = Color(0xFFF0F9FF);
+
+  // Mapped aliases for backwards-compatibility across existing screens
+  static const Color accentPink = Color(0xFF0284C7); // Pasig Accent Blue
+  static const Color softPink = Color(0xFFE0F2FE);   // Pasig Soft Sky Blue
+  static const Color pinkTint = Color(0xFFF0F9FF);   // Pasig Light Tint
 
   // Background & Surface
   static const Color background = Color(0xFFF8FAFC);
@@ -25,11 +39,10 @@ class AppColors {
   static const Color warningBg = Color(0xFFFEF3C7);
   static const Color error = Color(0xFFEF4444);
   static const Color errorBg = Color(0xFFFEE2E2);
-  static const Color info = Color(0xFF3B82F6);
-  static const Color infoBg = Color(0xFFDBEAFE);
+  static const Color info = Color(0xFF0284C7);
+  static const Color infoBg = Color(0xFFE0F2FE);
 
   // Borders & Dividers
   static const Color border = Color(0xFFE2E8F0);
   static const Color divider = Color(0xFFF1F5F9);
 }
-

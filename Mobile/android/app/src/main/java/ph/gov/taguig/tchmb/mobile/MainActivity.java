@@ -1,4 +1,4 @@
-package ph.gov.taguig.tchmb.mobile;
+package ph.gov.Pasig.milklink.mobile;
 
 import io.flutter.embedding.android.FlutterActivity;
 

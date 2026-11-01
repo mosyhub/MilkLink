@@ -36,7 +36,8 @@ class UserName {
 class UserModel {
   final String id;
   final UserName name;
-  final String email;
+  final String username;
+  final String? email;
   final String phone;
   final String role;
   final String? avatarUrl;
@@ -44,7 +45,8 @@ class UserModel {
   UserModel({
     required this.id,
     required this.name,
-    required this.email,
+    required this.username,
+    this.email,
     required this.phone,
     required this.role,
     this.avatarUrl,
@@ -60,7 +62,10 @@ class UserModel {
       name: json['name'] is Map<String, dynamic>
           ? UserName.fromJson(json['name'])
           : UserName(first: '', last: ''),
-      email: json['email'] ?? '',
+      username: json['username'] ?? '',
+      email: (json['email'] != null && (json['email'] as String).isNotEmpty)
+          ? json['email']
+          : null,
       phone: json['phone'] ?? '',
       role: json['role'] ?? 'User',
       avatarUrl: json['avatar'] is Map ? json['avatar']['url'] : null,
@@ -71,10 +76,10 @@ class UserModel {
     return {
       '_id': id,
       'name': name.toJson(),
-      'email': email,
+      'username': username,
+      if (email != null) 'email': email,
       'phone': phone,
       'role': role,
     };
   }
 }
-

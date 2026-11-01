@@ -100,8 +100,8 @@ class EventDetailScreen extends StatelessWidget {
                   SizedBox(height: 12),
                   Text(
                     '• Ensure you have eaten a healthy meal and are well-hydrated before donating.\n'
-                    '• Bring a valid government ID or your TCHMB donor record.\n'
-                    '• Expressed breast milk bottles will be handled and stored by trained TCHMB healthcare staff under strict cold-chain protocols.\n'
+                    '• Bring a valid government ID or your MilkLink donor record.\n'
+                    '• Expressed breast milk bottles will be handled and stored by trained MilkLink healthcare staff under strict cold-chain protocols.\n'
                     '• All donor milk goes through pasteurization and microbiological screening to ensure the safety of premature babies.',
                     style: TextStyle(fontSize: 13, height: 1.5, color: AppColors.textSecondary),
                   ),

@@ -63,7 +63,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             const SizedBox(height: 24),
             const Text(
-              'TCHMB PORTAL',
+              'MilkLink PORTAL',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 26,
@@ -73,7 +73,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Taguig City Human Milk Bank',
+              'Pasig City Human Milk Bank',
               style: TextStyle(
                 color: Colors.white70,
                 fontSize: 14,

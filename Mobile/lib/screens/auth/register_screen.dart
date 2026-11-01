@@ -18,17 +18,53 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _firstNameController = TextEditingController();
   final _middleNameController = TextEditingController();
   final _lastNameController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+
   bool _obscurePassword = true;
+  bool _obscureConfirm = true;
+
+  // --- Password strength state ---
+  bool _hasMinLength = false;
+  bool _hasUppercase = false;
+  bool _hasLowercase = false;
+  bool _hasDigit = false;
+  bool _hasSpecial = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _passwordController.addListener(_onPasswordChanged);
+  }
+
+ 
+void _onPasswordChanged() {
+  final v = _passwordController.text;
+
+  setState(() {
+    _hasMinLength = v.length >= 8;
+    _hasUppercase = v.contains(RegExp(r'[A-Z]'));
+    _hasLowercase = v.contains(RegExp(r'[a-z]'));
+    _hasDigit = v.contains(RegExp(r'[0-9]'));
+
+    // Check for at least one special character
+    _hasSpecial = v.contains(RegExp(r"""[!@#$%^&*()\-_=+\[\]{};:'",.<>/?`~\\|]"""));
+  });
+}
+
+
+  bool get _passwordPolicyMet =>
+      _hasMinLength && _hasUppercase && _hasLowercase && _hasDigit && _hasSpecial;
 
   @override
   void dispose() {
     _firstNameController.dispose();
     _middleNameController.dispose();
     _lastNameController.dispose();
+    _usernameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
@@ -38,6 +74,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
+
+    if (!_passwordPolicyMet) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Password does not meet the security requirements.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
 
     if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -50,12 +96,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final emailText = _emailController.text.trim();
+
     final success = await authProvider.register(
-      firstName: _firstNameController.text,
-      lastName: _lastNameController.text,
-      middleName: _middleNameController.text.isNotEmpty ? _middleNameController.text : null,
-      email: _emailController.text,
-      phone: _phoneController.text,
+      firstName: _firstNameController.text.trim(),
+      lastName: _lastNameController.text.trim(),
+      middleName: _middleNameController.text.trim().isNotEmpty
+          ? _middleNameController.text.trim()
+          : null,
+      username: _usernameController.text.trim(),
+      email: emailText.isNotEmpty ? emailText : null,
+      phone: _phoneController.text.trim(),
       password: _passwordController.text,
     );
 
@@ -75,6 +126,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
       );
     }
+  }
+
+  Widget _buildPolicyRow(bool met, String label) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Icon(
+            met ? Icons.check_circle : Icons.radio_button_unchecked,
+            size: 16,
+            color: met ? Colors.green : AppColors.textSecondary,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: met ? Colors.green : AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -107,15 +181,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 6),
                 const Text(
-                  'Join the Taguig City Human Milk Bank community to donate breast milk and help infants in need.',
+                  'Join the Pasig City Human Milk Bank community to donate breast milk and help infants in need.',
                   style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 24),
+
+                // --- Name Fields ---
                 CustomTextField(
                   label: 'First Name *',
                   hint: 'e.g. Maria',
                   controller: _firstNameController,
-                  validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
                 ),
                 const SizedBox(height: 14),
                 CustomTextField(
@@ -128,34 +204,67 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   label: 'Last Name *',
                   hint: 'e.g. Dela Cruz',
                   controller: _lastNameController,
-                  validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
                 ),
                 const SizedBox(height: 14),
+
+                // --- Username ---
                 CustomTextField(
-                  label: 'Email Address *',
-                  hint: 'e.g. maria@gmail.com',
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
+                  label: 'Username *',
+                  hint: 'e.g. maria_delacruz',
+                  controller: _usernameController,
+                  prefixIcon: const Icon(Icons.alternate_email, color: AppColors.textSecondary),
                   validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Required';
-                    if (!v.contains('@')) return 'Enter a valid email';
+                    if (v == null || v.trim().isEmpty) return 'Username is required';
+                    if (v.trim().length < 4) return 'At least 4 characters';
+                    if (v.trim().length > 30) return 'Maximum 30 characters';
+                    if (!RegExp(r'^[a-zA-Z0-9_.-]+$').hasMatch(v.trim())) {
+                      return 'Only letters, numbers, _, . or - allowed';
+                    }
                     return null;
                   },
                 ),
                 const SizedBox(height: 14),
+
+                // --- Email (Optional) ---
+                CustomTextField(
+                  label: 'Email Address (Optional)',
+                  hint: 'e.g. maria@gmail.com',
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  prefixIcon: const Icon(Icons.email_outlined, color: AppColors.textSecondary),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return null; // optional
+                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+$').hasMatch(v.trim())) {
+                      return 'Enter a valid email address';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 14),
+
+                // --- Phone ---
                 CustomTextField(
                   label: 'Phone Number *',
                   hint: 'e.g. 09123456789',
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
-                  validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+                  prefixIcon: const Icon(Icons.phone_outlined, color: AppColors.textSecondary),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return 'Required';
+                    if (v.trim().length < 11) return 'Enter a valid phone number';
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 14),
+
+                // --- Password ---
                 CustomTextField(
                   label: 'Password *',
-                  hint: 'Minimum 6 characters',
+                  hint: 'Create a strong password',
                   controller: _passwordController,
                   obscureText: _obscurePassword,
+                  prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textSecondary),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscurePassword ? Icons.visibility_off : Icons.visibility,
@@ -164,20 +273,65 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                   ),
                   validator: (v) {
-                    if (v == null || v.isEmpty) return 'Required';
-                    if (v.length < 6) return 'Minimum 6 characters';
+                    if (v == null || v.isEmpty) return 'Password is required';
+                    if (!_passwordPolicyMet) return 'Password does not meet requirements below';
                     return null;
                   },
                 ),
+                const SizedBox(height: 10),
+
+                // --- Password strength checklist ---
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Password Requirements:',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      _buildPolicyRow(_hasMinLength, 'At least 8 characters'),
+                      _buildPolicyRow(_hasUppercase, 'At least one uppercase letter (A-Z)'),
+                      _buildPolicyRow(_hasLowercase, 'At least one lowercase letter (a-z)'),
+                      _buildPolicyRow(_hasDigit, 'At least one number (0-9)'),
+                      _buildPolicyRow(_hasSpecial, 'At least one special character (!@#\$%^&* etc.)'),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 14),
+
+                // --- Confirm Password ---
                 CustomTextField(
                   label: 'Confirm Password *',
                   hint: 'Re-enter your password',
                   controller: _confirmPasswordController,
-                  obscureText: _obscurePassword,
-                  validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                  obscureText: _obscureConfirm,
+                  prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textSecondary),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureConfirm ? Icons.visibility_off : Icons.visibility,
+                      color: AppColors.textSecondary,
+                    ),
+                    onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+                  ),
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Required';
+                    if (v != _passwordController.text) return 'Passwords do not match';
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 28),
+
                 CustomButton(
                   text: 'Create Account',
                   isLoading: authProvider.status == AuthStatus.loading,
@@ -192,4 +346,3 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 }
-

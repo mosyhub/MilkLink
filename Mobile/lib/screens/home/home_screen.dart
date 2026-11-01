@@ -46,7 +46,7 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             const Text(
-              'TCHMB Portal',
+              'MilkLink Portal',
               style: TextStyle(
                 color: AppColors.primaryNavy,
                 fontSize: 18,
@@ -321,7 +321,7 @@ class HomeScreen extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [AppColors.accentPink, Color(0xFFF06292)],
+          colors: [AppColors.primaryNavy, Color(0xFF0284C7)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),

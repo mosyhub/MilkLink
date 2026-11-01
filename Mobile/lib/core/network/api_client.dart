@@ -61,12 +61,14 @@ class ApiClient {
       final headers = await _getHeaders(requiresAuth: requiresAuth);
       final response = await http.get(Uri.parse(url), headers: headers);
       return _processResponse(response);
-    } on SocketException catch (e) {
-      throw ApiException('Cannot reach server ($url): ${e.message}. Check network or tap ⚙ to change URL.');
+    } on SocketException {
+      throw ApiException(
+        'Cannot reach the server. Make sure the backend is running and your device is connected to the same network.',
+      );
     } on ApiException {
       rethrow;
     } catch (e) {
-      throw ApiException('Error: ${e.toString()}');
+      throw ApiException('Unexpected error: ${e.toString()}');
     }
   }
 
@@ -83,12 +85,14 @@ class ApiClient {
         body: data != null ? jsonEncode(data) : null,
       );
       return _processResponse(response);
-    } on SocketException catch (e) {
-      throw ApiException('Cannot reach server ($url): ${e.message}. Check network or tap ⚙ to change URL.');
+    } on SocketException {
+      throw ApiException(
+        'Cannot reach the server. Make sure the backend is running and your device is connected to the same network.',
+      );
     } on ApiException {
       rethrow;
     } catch (e) {
-      throw ApiException('Error: ${e.toString()}');
+      throw ApiException('Unexpected error: ${e.toString()}');
     }
   }
 
@@ -105,12 +109,14 @@ class ApiClient {
         body: data != null ? jsonEncode(data) : null,
       );
       return _processResponse(response);
-    } on SocketException catch (e) {
-      throw ApiException('Cannot reach server ($url): ${e.message}. Check network or tap ⚙ to change URL.');
+    } on SocketException {
+      throw ApiException(
+        'Cannot reach the server. Make sure the backend is running and your device is connected to the same network.',
+      );
     } on ApiException {
       rethrow;
     } catch (e) {
-      throw ApiException('Error: ${e.toString()}');
+      throw ApiException('Unexpected error: ${e.toString()}');
     }
   }
 
@@ -119,13 +125,14 @@ class ApiClient {
       final headers = await _getHeaders(requiresAuth: requiresAuth);
       final response = await http.delete(Uri.parse(url), headers: headers);
       return _processResponse(response);
-    } on SocketException catch (e) {
-      throw ApiException('Cannot reach server ($url): ${e.message}. Check network or tap ⚙ to change URL.');
+    } on SocketException {
+      throw ApiException(
+        'Cannot reach the server. Make sure the backend is running and your device is connected to the same network.',
+      );
     } on ApiException {
       rethrow;
     } catch (e) {
-      throw ApiException('Error: ${e.toString()}');
+      throw ApiException('Unexpected error: ${e.toString()}');
     }
   }
 }
-

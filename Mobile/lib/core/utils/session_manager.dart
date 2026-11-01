@@ -5,7 +5,6 @@ class SessionManager {
   static const String _keyRefreshToken = 'refresh_token';
   static const String _keyUserId = 'user_id';
   static const String _keyUserRole = 'user_role';
-  static const String _keyCustomBaseUrl = 'custom_base_url';
 
   static Future<void> saveSession({
     required String token,
@@ -49,15 +48,4 @@ class SessionManager {
     await prefs.remove(_keyUserId);
     await prefs.remove(_keyUserRole);
   }
-
-  static Future<void> saveCustomBaseUrl(String url) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_keyCustomBaseUrl, url);
-  }
-
-  static Future<String?> getCustomBaseUrl() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_keyCustomBaseUrl);
-  }
 }
-
