@@ -249,46 +249,76 @@ exports.updatePassword = catchAsyncErrors(async (req, res, next) => {
 
 })
 
-// Update user profile => /api/v1/me/update
 exports.updateProfile = catchAsyncErrors(async (req, res, next) => {
+    const user = await User.findById(req.user.id).select('+password');
+    if (!user) return next(new ErrorHandler('User not found', 404));
 
-    const newUserData = {
-        name: req.body.name,
-        email: req.body.email
+    const { username, email, avatar, newPassword, oldPassword } = req.body;
+
+    // 1. Username
+    if (username !== undefined) {
+        const cleanUsername = String(username).trim().toLowerCase();
+        if (cleanUsername && cleanUsername !== user.username) {
+            if (cleanUsername.length < 4 || cleanUsername.length > 30) {
+                return next(new ErrorHandler('Username must be between 4 and 30 characters', 400));
+            }
+            if (!/^[a-zA-Z0-9_.-]+$/.test(cleanUsername)) {
+                return next(new ErrorHandler('Username can only contain letters, numbers, underscores, dots, or hyphens', 400));
+            }
+            const taken = await User.findOne({ username: cleanUsername, _id: { $ne: user._id }, isDeleted: false });
+            if (taken) return next(new ErrorHandler('Username is already taken. Please choose another.', 400));
+            user.username = cleanUsername;
+        }
     }
 
-    // Update avatar
-    // if(req.body.avatar !== '') {
-    //     const user = await User.findById(req.user.id);
+    // 2. Email (empty string clears it)
+    if (email !== undefined) {
+        const cleanEmail = String(email).trim().toLowerCase();
+        if (!cleanEmail) {
+            user.email = undefined;
+        } else if (cleanEmail !== user.email) {
+            if (!validator.isEmail(cleanEmail)) {
+                return next(new ErrorHandler('Please enter a valid email address', 400));
+            }
+            const used = await User.findOne({ email: cleanEmail, _id: { $ne: user._id }, isDeleted: false });
+            if (used) return next(new ErrorHandler('Email address is already in use by another account.', 400));
+            user.email = cleanEmail;
+        }
+    }
 
-    //     const image_id = user.avatar.public_id;
-    //     const res = await cloudinary.v2.uploader.destroy;
+    // 3. Avatar: '' or null removes it; a data URL replaces it
+    if (avatar !== undefined) {
+        if (avatar === null || avatar === '') {
+            user.avatar = undefined;
+        } else if (typeof avatar === 'string' && avatar.startsWith('data:image/')) {
+            if (!/^data:image\/(jpeg|jpg|png|webp);base64,/.test(avatar)) {
+                return next(new ErrorHandler('Unsupported image type. Use JPG, PNG or WEBP.', 400));
+            }
+            if (avatar.length > 1_500_000) { // roughly 1.1 MB of image data
+                return next(new ErrorHandler('Image is too large. Please choose a smaller photo.', 413));
+            }
+            user.avatar = { public_id: 'mobile_avatar', url: avatar };
+        }
+        // An http(s) URL means "unchanged", so ignore it
+    }
 
-    //     const result = await cloudinary.v2.uploader.upload(req.body.avatar, {
-    //         folder: 'avatar',
-    //         width: 150,
-    //         crop: "scale"
-    //     });
+    // 4. Password
+    if (newPassword) {
+        if (!oldPassword) {
+            return next(new ErrorHandler('Current password is required to change your password', 400));
+        }
+        if (!(await user.comparePassword(oldPassword))) {
+            return next(new ErrorHandler('Current password is incorrect', 400));
+        }
+        const { isValid, message } = validatePasswordPolicy(newPassword);
+        if (!isValid) return next(new ErrorHandler(message, 400));
+        user.password = newPassword;
+    }
 
-    //     newUserData.avatar = {
-    //         public_id: result.public_id,
-    //         url: result.url
-    //     }
+    await user.save();
 
-    // }
-
-    const user = await User.findByIdAndUpdate(req.user.id, newUserData, {
-        new: true,
-        runValidators: true,
-        useFindAndModify: false,
-    })
-
-    res.status(200).json({
-        user,
-        success: true
-    })
-
-})
+    res.status(200).json({ success: true, message: 'Profile updated successfully', user });
+});
 
 // Logout User => /api/v1/logout
 exports.logout = catchAsyncErrors(async (req, res, next) => {
@@ -664,14 +694,14 @@ exports.selfRegister = catchAsyncErrors(async (req, res, next) => {
         if (session && session.inTransaction()) {
             try {
                 await session.abortTransaction();
-            } catch (_) {}
+            } catch (_) { }
         }
         return next(new ErrorHandler(`Self-registration failed: ${err.message}`, 400));
     } finally {
         if (session) {
             try {
                 session.endSession();
-            } catch (_) {}
+            } catch (_) { }
         }
     }
 
@@ -943,7 +973,7 @@ exports.claimExistingRecord = catchAsyncErrors(async (req, res, next) => {
         if (session && session.inTransaction()) {
             try {
                 await session.abortTransaction();
-            } catch (_) {}
+            } catch (_) { }
         }
 
         // If transactions aren't supported on standalone Mongo (e.g. local dev without replica set)
@@ -1001,7 +1031,7 @@ exports.claimExistingRecord = catchAsyncErrors(async (req, res, next) => {
         if (session) {
             try {
                 session.endSession();
-            } catch (_) {}
+            } catch (_) { }
         }
     }
 
