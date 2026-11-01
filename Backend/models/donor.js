@@ -1,10 +1,23 @@
 const mongoose = require("mongoose");
 const { ObjectId } = mongoose.Schema.Types;
-const softDeletePlugin = require('./plugins/softDelete')
+const softDeletePlugin = require('./plugins/softDelete');
+
 const donorSchema = new mongoose.Schema({
   user: {
     type: ObjectId,
     ref: "User",
+    default: null,
+    index: true,
+  },
+  staff: {
+    type: ObjectId,
+    ref: "User",
+    default: null,
+  },
+  name: {
+    first: { type: String, trim: true, default: "" },
+    middle: { type: String, trim: true, default: "" },
+    last: { type: String, trim: true, default: "" },
   },
   home_address: {
     street: {
@@ -26,15 +39,12 @@ const donorSchema = new mongoose.Schema({
   },
   office_address: {
     type: String,
-    
   },
   contact_number: {
     type: String,
-    
   },
   occupation: {
     type: String,
-    
   },
   donorType: {
     type: String,
@@ -43,7 +53,37 @@ const donorSchema = new mongoose.Schema({
   },
   eligibility: {
     type: String,
-
+    enum: [
+      'Pending Review',
+      'For Laboratory Verification',
+      'For Medical Assessment',
+      'Eligible',
+      'Temporarily Deferred',
+      'Not Eligible'
+    ],
+    default: 'Pending Review',
+  },
+  claimToken: {
+    type: String,
+    select: false,
+    index: true,
+  },
+  claimTokenHash: {
+    type: String,
+    select: false,
+    index: true,
+  },
+  claimTokenExpires: {
+    type: Date,
+    select: false,
+  },
+  qrCodeData: {
+    type: String,
+    default: null,
+  },
+  audit: {
+    createdBy: { type: ObjectId, ref: "User" },
+    updatedBy: { type: ObjectId, ref: "User" },
   },
   submissionID: {
     type: String,
@@ -51,15 +91,12 @@ const donorSchema = new mongoose.Schema({
   lastSubmissionDate: {
     type: Date,
   },
-  dateTested: {
-    type: Date,
-  },
   verified: {
     type: Boolean,
     default: false,
   },
   dateTested: {
-    type: Date
+    type: Date,
   },
   children: [
     {
@@ -70,13 +107,13 @@ const donorSchema = new mongoose.Schema({
       age: {
         value: {
           type: Number,
-          required: [true, "Please enter age of the donor"]
+          required: [true, "Please enter age of the donor"],
         },
         unit: {
           enum: ["years", "months", "weeks", "days"],
           type: String,
-          required: true
-        }
+          required: true,
+        },
       },
       birth_weight: {
         type: String,
@@ -102,8 +139,8 @@ const donorSchema = new mongoose.Schema({
         ref: "Letting",
       },
       totalVolume: {
-        type: Number
-      }
+        type: Number,
+      },
     },
   ],
   createdAt: {
@@ -111,15 +148,25 @@ const donorSchema = new mongoose.Schema({
     default: Date.now,
   },
 });
-donorSchema.plugin(softDeletePlugin)
+
+donorSchema.plugin(softDeletePlugin);
+
+donorSchema.virtual('fullName').get(function () {
+  const n = this.name || {};
+  return [n.first, n.middle, n.last].filter(Boolean).join(' ').trim();
+});
+
+// Claim Status Virtual
+donorSchema.virtual('claimStatus').get(function () {
+  return this.user ? 'Claimed / Linked' : 'Unclaimed';
+});
 
 donorSchema.virtual('age').get(function () {
+  if (!this.birthday) return 'N/A';
   const now = new Date();
   const birth = new Date(this.birthday);
 
   const diffMs = now - birth;
-  const ageDate = new Date(diffMs);
-
   const years = now.getFullYear() - birth.getFullYear();
   const months = now.getMonth() - birth.getMonth() + (years * 12);
   const weeks = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 7));
@@ -134,7 +181,9 @@ donorSchema.virtual('age').get(function () {
   } else {
     return `${days} day${days > 1 ? 's' : ''} old`;
   }
-})
-donorSchema.set('toObject', {virtuals: true});
-donorSchema.set('toJSON', {virtuals: true});
+});
+
+donorSchema.set('toObject', { virtuals: true });
+donorSchema.set('toJSON', { virtuals: true });
+
 module.exports = mongoose.model("Donor", donorSchema);

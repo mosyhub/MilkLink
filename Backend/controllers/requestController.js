@@ -28,20 +28,26 @@ exports.createRequest = catchAsyncErrors(async (req, res, next) => {
     let images = [];
     if (typeof req.body.images === "string") {
       images.push(req.body.images);
-    } else {
+    } else if (Array.isArray(req.body.images)) {
       images = req.body.images;
     }
 
     let imagesLinks = [];
 
-    for (let i = 0; i < images.length; i++) {
-      const result = await cloudinary.v2.uploader.upload(images[i], {
-        folder: "requests",
-      });
-      imagesLinks.push({
-        public_id: result.public_id,
-        url: result.secure_url,
-      });
+    if (images && images.length > 0) {
+      for (let i = 0; i < images.length; i++) {
+        if (typeof images[i] === "string" && images[i].startsWith("data:")) {
+          const result = await cloudinary.v2.uploader.upload(images[i], {
+            folder: "requests",
+          });
+          imagesLinks.push({
+            public_id: result.public_id,
+            url: result.secure_url,
+          });
+        } else if (typeof images[i] === "object" && images[i].url) {
+          imagesLinks.push(images[i]);
+        }
+      }
     }
 
     req.body.images = imagesLinks;
@@ -54,26 +60,24 @@ exports.createRequest = catchAsyncErrors(async (req, res, next) => {
         )
       );
     }
-    let newData = {};
+    let newData = {
+      ...req.body,
+      requestedBy: req.body.requestedBy || req.user?.id,
+      date: req.body.date || new Date(),
+    };
     if (req.body.patientType === "Inpatient") {
-      newData = {
-        ...req.body,
-        department: req.body.location,
-      };
+      newData.department = req.body.department || req.body.location || "NICU";
     } else {
-      newData = {
-        ...req.body,
-        hospital: req.body.location,
-      };
+      newData.hospital = req.body.hospital || req.body.location || "Pasig-Pateros District Hospital";
     }
     const request = await Request.create(newData);
 
-    
     patient.requested.push(request._id);
-    patient.save();
+    await patient.save();
 
     res.status(201).json({
       success: true,
+      message: "Request created successfully",
       request,
     });
   } catch (error) {
@@ -419,4 +423,50 @@ exports.outpatientDispense = catchAsyncErrors(async (req, res) => {
       message: error.message,
     });
   }
+});
+
+// Soft Delete (Archive) request => /api/v1/request/:id/soft-delete
+exports.softDeleteRequest = catchAsyncErrors(async (req, res, next) => {
+  const cleanId = req.params.id.trim();
+  const request = await Request.softDeleteById(cleanId);
+
+  if (!request) {
+    return next(new ErrorHandler(`Request not found with ID: ${cleanId}`, 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Request successfully archived",
+    request,
+  });
+});
+
+// Restore request => /api/v1/request/:id/restore
+exports.restoreRequest = catchAsyncErrors(async (req, res, next) => {
+  const cleanId = req.params.id.trim();
+  const request = await Request.restoreById(cleanId);
+
+  if (!request) {
+    return next(new ErrorHandler(`Archived request not found with ID: ${cleanId}`, 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Request successfully restored",
+    request,
+  });
+});
+
+// Get Archived Requests => /api/v1/requests/archived
+exports.archivedRequests = catchAsyncErrors(async (req, res) => {
+  const requests = await Request.findOnlyDeleted()
+    .populate("patient", "name patientType")
+    .populate("requestedBy", "name employeeID")
+    .sort({ deletedAt: -1 });
+
+  res.status(200).json({
+    success: true,
+    count: requests.length,
+    requests,
+  });
 });

@@ -1,4 +1,7 @@
+const mongoose = require('mongoose');
 const User = require('../models/user');
+const Donor = require('../models/donor');
+const Patient = require('../models/patient');
 const ErrorHandler = require('../utils/errorHandler');
 const catchAsyncErrors = require('../middlewares/catchAsyncErrors');
 const sendToken = require('../utils/jwtToken');
@@ -308,7 +311,7 @@ exports.logout = catchAsyncErrors(async (req, res, next) => {
 exports.allUsers = catchAsyncErrors(async (req, res, next) => {
     const { search, sortBy, order = "asc", role } = req.query;
     const id = req.user.id || null;
-    const user = await User.find({_id: id});
+    const user = await User.find({ _id: id });
     // Create a query object to hold the search criteria
     const query = {};
     if (search) {
@@ -368,7 +371,7 @@ exports.allUsers = catchAsyncErrors(async (req, res, next) => {
             $sort: { [sortField === "employeeID" ? "employeeIDNum" : sortField]: sortOrder }
         });
 
-       
+
 
         // Fetch users
         let users = await User.aggregate(aggregationPipeline);
@@ -382,7 +385,7 @@ exports.allUsers = catchAsyncErrors(async (req, res, next) => {
 
         res.status(200).json({
             success: true,
-            
+
             users
         });
     } catch (error) {
@@ -520,3 +523,491 @@ exports.deleteStaff = catchAsyncErrors(async (req, res, next) => {
         success: true
     })
 })
+
+/*
+ * Legacy direct self-registration flow intentionally remains unavailable.
+ * Donor and patient accounts must be created through claimExistingRecord.
+ */
+exports.selfRegister = catchAsyncErrors(async (req, res, next) => {
+    const {
+        username,
+        password,
+        phone,
+        phoneNumber,
+        name,
+        firstName,
+        middleName,
+        lastName,
+        profileType, // 'Donor' or 'Patient'
+        home_address,
+        // Donor Profile specifics:
+        birthday,
+        donorType,
+        occupation,
+        // Patient Profile specifics:
+        patientName,
+        motherName,
+        patientType,
+        age,
+        aog
+    } = req.body;
+
+    const userPhone = (phone || phoneNumber || '').trim();
+    const cleanUsername = (username || '').trim().toLowerCase();
+    const first = (name?.first || firstName || '').trim();
+    const middle = (name?.middle || middleName || '').trim();
+    const last = (name?.last || lastName || '').trim();
+
+    // 1. Validation
+    if (!cleanUsername) return next(new ErrorHandler('Username is required', 400));
+    if (!first || !last) return next(new ErrorHandler('First and last names are required', 400));
+    if (!userPhone) return next(new ErrorHandler('Phone number is required', 400));
+
+    if (!['Donor', 'Patient'].includes(profileType)) {
+        return next(new ErrorHandler("Profile type must be either 'Donor' or 'Patient'", 400));
+    }
+
+    const passwordValidation = validatePasswordPolicy(password);
+    if (!passwordValidation.isValid) {
+        return next(new ErrorHandler(passwordValidation.message, 400));
+    }
+
+    // Check duplicate username
+    const existingUser = await User.findOne({ username: cleanUsername, isDeleted: false });
+    if (existingUser) {
+        return next(new ErrorHandler('Username is already taken. Please choose another.', 400));
+    }
+
+    // Address verification
+    const address = home_address || {
+        street: req.body.street || '',
+        brgy: req.body.brgy || '',
+        city: req.body.city || 'Pasig City'
+    };
+
+    if (!address.street || !address.brgy || !address.city) {
+        return next(new ErrorHandler('Complete address (street, barangay, city) is required', 400));
+    }
+
+    // 2. Mongoose Transaction for Atomic Multi-Document Mutation
+    let session = null;
+    let newUser = null;
+    let createdProfile = null;
+
+    try {
+        session = await mongoose.startSession();
+        session.startTransaction();
+
+        // Step 1: Create the User instance first
+        newUser = new User({
+            username: cleanUsername,
+            password, // Password hashing handled in user pre('save') middleware
+            phone: userPhone,
+            name: {
+                first,
+                middle,
+                last
+            },
+            role: 'User'
+        });
+
+        await newUser.save({ session });
+
+        // Step 2: Instantly create corresponding Donor or Patient record injecting User._id
+        if (profileType === 'Donor') {
+            if (!birthday) {
+                throw new Error('Birthday is required for Donor registration');
+            }
+
+            const donor = new Donor({
+                user: newUser._id,
+                home_address: address,
+                birthday: new Date(birthday),
+                donorType: donorType || 'Community',
+                contact_number: userPhone,
+                occupation: occupation || '',
+                eligibility: 'Pending Review',
+                verified: false,
+                audit: {
+                    createdBy: newUser._id
+                }
+            });
+
+            await donor.save({ session });
+            createdProfile = donor;
+
+        } else if (profileType === 'Patient') {
+            const patient = new Patient({
+                user: newUser._id,
+                name: (patientName || `${first} (Child/Infant)`).trim(),
+                motherName: (motherName || `${first} ${last}`).trim(),
+                phone: userPhone,
+                home_address: address,
+                patientType: patientType || 'Outpatient',
+                age: age || '',
+                aog: aog || '',
+                admissionDate: new Date(),
+                staff: newUser._id, // Initial self-registered reference
+                requested: [],
+                audit: {
+                    createdBy: newUser._id
+                }
+            });
+
+            await patient.save({ session });
+            createdProfile = patient;
+        }
+
+        // Commit transaction
+        await session.commitTransaction();
+    } catch (err) {
+        if (session && session.inTransaction()) {
+            try {
+                await session.abortTransaction();
+            } catch (_) {}
+        }
+        return next(new ErrorHandler(`Self-registration failed: ${err.message}`, 400));
+    } finally {
+        if (session) {
+            try {
+                session.endSession();
+            } catch (_) {}
+        }
+    }
+
+    // 3. Return authenticated JWT token + profile
+    return sendToken(newUser, 201, req, res, {
+        message: `${profileType} account self-registered successfully`,
+        profileType,
+        profile: createdProfile
+    });
+});
+
+// ============================================================================
+// VERIFY CLAIM TOKEN / QR CODE => POST /api/v1/verify-claim
+// ============================================================================
+exports.verifyClaimToken = catchAsyncErrors(async (req, res, next) => {
+    let rawInput = req.body.claimToken || req.body.token || req.body.qrData || '';
+    if (typeof rawInput !== 'string' || !rawInput.trim()) {
+        return next(new ErrorHandler('Claim token or scannable QR data is required', 400));
+    }
+
+    rawInput = rawInput.trim();
+
+    // Check if the input is a JSON string from a scanned MilkLink QR code
+    let parsedToken = rawInput;
+    if (rawInput.startsWith('{') && rawInput.endsWith('}')) {
+        try {
+            const parsed = JSON.parse(rawInput);
+            if (parsed.token) {
+                parsedToken = parsed.token;
+            }
+        } catch (_) {
+            parsedToken = rawInput;
+        }
+    }
+
+    const cleanToken = parsedToken.trim().toUpperCase();
+    const tokenHash = crypto.createHash('sha256').update(cleanToken).digest('hex');
+
+    // Check Donor collection first
+    let donor = await Donor.findOne({
+        $or: [
+            { claimTokenHash: tokenHash },
+            { claimToken: cleanToken }
+        ],
+        isDeleted: false
+    }).select('+claimTokenHash +claimTokenExpires');
+
+    if (donor) {
+        if (donor.user) {
+            return next(new ErrorHandler('This Donor profile has already been claimed and linked to an account.', 409));
+        }
+        if (donor.claimTokenExpires && donor.claimTokenExpires < new Date()) {
+            return next(new ErrorHandler('This claim token/QR code has expired. Please contact Milk Bank staff.', 400));
+        }
+
+        const donorFullName = donor.name?.first
+            ? [donor.name.first, donor.name.middle, donor.name.last].filter(Boolean).join(' ').trim()
+            : (donor.children && donor.children.length > 0 ? `Mother of ${donor.children[0].name}` : 'Human Milk Donor');
+
+        return res.status(200).json({
+            success: true,
+            valid: true,
+            profileType: 'Donor',
+            claimToken: cleanToken,
+            details: {
+                fullName: donorFullName,
+                contactPhone: donor.contact_number || '',
+                donorCategory: donor.donorType || 'Community',
+                addressSnippet: `${donor.home_address?.brgy || ''}, ${donor.home_address?.city || 'Pasig City'}`,
+                screeningStatus: donor.eligibility || 'Pending Review',
+                registrationDate: donor.createdAt
+            }
+        });
+    }
+
+    // Check Patient collection
+    let patient = await Patient.findOne({
+        $or: [
+            { claimTokenHash: tokenHash },
+            { claimToken: cleanToken }
+        ],
+        isDeleted: false
+    }).select('+claimTokenHash +claimTokenExpires');
+
+    if (patient) {
+        if (patient.user) {
+            return next(new ErrorHandler('This Recipient profile has already been claimed and linked to an account.', 409));
+        }
+        if (patient.claimTokenExpires && patient.claimTokenExpires < new Date()) {
+            return next(new ErrorHandler('This claim token/QR code has expired. Please contact Milk Bank staff.', 400));
+        }
+
+        return res.status(200).json({
+            success: true,
+            valid: true,
+            profileType: 'Patient',
+            claimToken: cleanToken,
+            details: {
+                fullName: patient.name,
+                motherName: patient.motherName || '',
+                contactPhone: patient.phone || '',
+                patientType: patient.patientType || 'Inpatient',
+                addressSnippet: `${patient.home_address?.brgy || ''}, ${patient.home_address?.city || 'Pasig City'}`,
+                admissionDate: patient.admissionDate,
+                registrationDate: patient.createdAt
+            }
+        });
+    }
+
+    return next(new ErrorHandler('Invalid claim token or QR code. Record not found or already verified.', 400));
+});
+
+// ============================================================================
+// FLOW B - STEP 2: CLAIM & BIND EXISTING RECORD => POST /api/v1/claim-record
+// ============================================================================
+exports.claimExistingRecord = catchAsyncErrors(async (req, res, next) => {
+    let {
+        claimToken,
+        token,
+        qrData,
+        username,
+        password,
+        email,
+        phone,
+        firstName,
+        lastName,
+        profileType
+    } = req.body;
+
+    let rawTokenInput = claimToken || token || qrData || '';
+    if (typeof rawTokenInput !== 'string' || !rawTokenInput.trim()) {
+        return next(new ErrorHandler('Claim token or scannable QR data is required', 400));
+    }
+
+    rawTokenInput = rawTokenInput.trim();
+    if (rawTokenInput.startsWith('{') && rawTokenInput.endsWith('}')) {
+        try {
+            const parsed = JSON.parse(rawTokenInput);
+            if (parsed.token) rawTokenInput = parsed.token;
+        } catch (_) { }
+    }
+
+    const cleanUsername = (username || '').trim().toLowerCase();
+    if (!cleanUsername) {
+        return next(new ErrorHandler('Please provide a unique username', 400));
+    }
+
+    const passwordValidation = validatePasswordPolicy(password);
+    if (!passwordValidation.isValid) {
+        return next(new ErrorHandler(passwordValidation.message, 400));
+    }
+
+    // Verify username availability
+    const userExists = await User.findOne({ username: cleanUsername, isDeleted: false });
+    if (userExists) {
+        return next(new ErrorHandler('Username is already taken. Please choose another.', 400));
+    }
+
+    // If optional email is provided, verify uniqueness
+    const cleanEmail = email && typeof email === 'string' && email.trim() ? email.trim().toLowerCase() : null;
+    if (cleanEmail) {
+        const emailExists = await User.findOne({ email: cleanEmail, isDeleted: false });
+        if (emailExists) {
+            return next(new ErrorHandler('Email address is already in use by another account.', 400));
+        }
+    }
+
+    const rawToken = rawTokenInput.trim().toUpperCase();
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+    // Search for unclaimed record matching hash and not expired
+    let unclaimedRecord = null;
+    let resolvedType = null;
+
+    if (!profileType || profileType === 'Donor') {
+        unclaimedRecord = await Donor.findOne({
+            $or: [
+                { claimTokenHash: tokenHash },
+                { claimToken: rawToken }
+            ],
+            claimTokenExpires: { $gt: new Date() },
+            user: null,
+            isDeleted: false
+        }).select('+claimTokenHash +claimTokenExpires');
+
+        if (unclaimedRecord) resolvedType = 'Donor';
+    }
+
+    if (!unclaimedRecord && (!profileType || profileType === 'Patient')) {
+        unclaimedRecord = await Patient.findOne({
+            $or: [
+                { claimTokenHash: tokenHash },
+                { claimToken: rawToken }
+            ],
+            claimTokenExpires: { $gt: new Date() },
+            user: null,
+            isDeleted: false
+        }).select('+claimTokenHash +claimTokenExpires');
+
+        if (unclaimedRecord) resolvedType = 'Patient';
+    }
+
+    if (!unclaimedRecord) {
+        return next(new ErrorHandler(
+            'Invalid or expired claim token. Record was either already claimed, does not exist, or token has expired.',
+            400
+        ));
+    }
+
+    if (unclaimedRecord.user) {
+        return next(new ErrorHandler('This record has already been claimed and linked to an account.', 409));
+    }
+
+    // Atomic transaction for account creation and record binding
+    let session = null;
+    let newUser = null;
+
+    try {
+        session = await mongoose.startSession();
+        session.startTransaction();
+
+        const contactPhone = phone || unclaimedRecord.phone || unclaimedRecord.contact_number || '09000000000';
+
+        let userFirst = firstName ? firstName.trim() : '';
+        let userLast = lastName ? lastName.trim() : '';
+        let userMiddle = '';
+
+        if (!userFirst || !userLast) {
+            if (resolvedType === 'Donor') {
+                userFirst = unclaimedRecord.name?.first || 'Donor';
+                userMiddle = unclaimedRecord.name?.middle || '';
+                userLast = unclaimedRecord.name?.last || 'Member';
+            } else {
+                userFirst = unclaimedRecord.motherName ? unclaimedRecord.motherName.split(' ')[0] : 'Mother';
+                userLast = unclaimedRecord.name ? unclaimedRecord.name.split(' ').pop() : 'Patient';
+            }
+        }
+
+        newUser = new User({
+            username: cleanUsername,
+            password,
+            email: cleanEmail,
+            phone: contactPhone,
+            name: {
+                first: userFirst,
+                middle: userMiddle,
+                last: userLast
+            },
+            role: 'User'
+        });
+
+        await newUser.save({ session });
+
+        // Bind profile's user reference property to the new User._id
+        unclaimedRecord.user = newUser._id;
+        unclaimedRecord.claimToken = undefined;
+        unclaimedRecord.claimTokenHash = undefined;
+        unclaimedRecord.claimTokenExpires = undefined;
+        unclaimedRecord.qrCodeData = null;
+
+        if (unclaimedRecord.audit) {
+            unclaimedRecord.audit.updatedBy = newUser._id;
+        }
+
+        await unclaimedRecord.save({ session });
+
+        await session.commitTransaction();
+    } catch (err) {
+        if (session && session.inTransaction()) {
+            try {
+                await session.abortTransaction();
+            } catch (_) {}
+        }
+
+        // If transactions aren't supported on standalone Mongo (e.g. local dev without replica set)
+        if (err.message && (err.message.includes('replica set') || err.message.includes('Transaction numbers'))) {
+            try {
+                const contactPhone = phone || unclaimedRecord.phone || unclaimedRecord.contact_number || '09000000000';
+                let userFirst = firstName ? firstName.trim() : '';
+                let userLast = lastName ? lastName.trim() : '';
+                let userMiddle = '';
+
+                if (!userFirst || !userLast) {
+                    if (resolvedType === 'Donor') {
+                        userFirst = unclaimedRecord.name?.first || 'Donor';
+                        userMiddle = unclaimedRecord.name?.middle || '';
+                        userLast = unclaimedRecord.name?.last || 'Member';
+                    } else {
+                        userFirst = unclaimedRecord.motherName ? unclaimedRecord.motherName.split(' ')[0] : 'Mother';
+                        userLast = unclaimedRecord.name ? unclaimedRecord.name.split(' ').pop() : 'Patient';
+                    }
+                }
+
+                newUser = new User({
+                    username: cleanUsername,
+                    password,
+                    email: cleanEmail,
+                    phone: contactPhone,
+                    name: {
+                        first: userFirst,
+                        middle: userMiddle,
+                        last: userLast
+                    },
+                    role: 'User'
+                });
+
+                await newUser.save();
+
+                unclaimedRecord.user = newUser._id;
+                unclaimedRecord.claimToken = undefined;
+                unclaimedRecord.claimTokenHash = undefined;
+                unclaimedRecord.claimTokenExpires = undefined;
+                unclaimedRecord.qrCodeData = null;
+
+                if (unclaimedRecord.audit) {
+                    unclaimedRecord.audit.updatedBy = newUser._id;
+                }
+
+                await unclaimedRecord.save();
+            } catch (fallbackErr) {
+                return next(new ErrorHandler(`Account binding failed: ${fallbackErr.message}`, 500));
+            }
+        } else {
+            return next(new ErrorHandler(`Account binding failed: ${err.message}`, 500));
+        }
+    } finally {
+        if (session) {
+            try {
+                session.endSession();
+            } catch (_) {}
+        }
+    }
+
+    return sendToken(newUser, 201, req, res, {
+        message: `Existing ${resolvedType} profile claimed and linked successfully!`,
+        profileType: resolvedType,
+        profile: unclaimedRecord
+    });
+});

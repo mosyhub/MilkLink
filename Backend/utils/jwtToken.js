@@ -1,11 +1,7 @@
-const sendToken = (user, statusCode, req, res) => {
-    // Gracefully handle calls like sendToken(user, statusCode, res)
-    if (!res && req && req.status) {
-        res = req;
-        req = null;
-    }
-
-    if (!res && req && req.status) {
+const sendToken = (user, statusCode, req, res, extra = {}) => {
+    // Gracefully handle calls like sendToken(user, statusCode, res) or sendToken(user, statusCode, res, extra)
+    if (req && typeof req.status === 'function' && (!res || typeof res.status !== 'function')) {
+        extra = res || {};
         res = req;
         req = null;
     }
@@ -15,21 +11,24 @@ const sendToken = (user, statusCode, req, res) => {
 
     const isMobile = req && req.headers && req.headers['x-client-type'] === 'mobile';
 
+    const responsePayload = {
+        success: true,
+        message: statusCode === 201 ? 'Registered successfully' : 'Login successful',
+        token: accessToken,
+        refreshToken,
+        user,
+        ...extra
+    };
+
     if (isMobile) {
         res.setHeader('Authorization', `Bearer ${accessToken}`);
-        return res.status(statusCode).json({
-            success: true,
-            message: statusCode === 201 ? 'Registered successfully' : 'Login successful',
-            token: accessToken,
-            refreshToken,
-            user
-        });
+        return res.status(statusCode).json(responsePayload);
     } else {
         res.cookie('accessToken', accessToken, {
             httpOnly: true,
             maxAge: 15 * 60 * 1000, // 15 mins
             sameSite: 'None',
-            secure: true // set to true in production
+            secure: true
         });
 
         res.cookie('refreshToken', refreshToken, {
@@ -39,14 +38,8 @@ const sendToken = (user, statusCode, req, res) => {
             secure: true
         });
 
-        return res.status(statusCode).json({
-            success: true,
-            message: statusCode === 201 ? 'Registered successfully' : 'Login successful',
-            token: accessToken,
-            user
-        });
+        return res.status(statusCode).json(responsePayload);
     }
 };
 
-module.exports = sendToken;
 module.exports = sendToken;
