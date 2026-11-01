@@ -14,8 +14,9 @@ exports.allPatients = catchAsyncErrors(async (req, res, next) => {
     if (search) {
         query.$or = [
             { 'name': { $regex: search, $options: 'i' } },
+            { 'motherName': { $regex: search, $options: 'i' } },
+            { 'phone': { $regex: search, $options: 'i' } },
             { 'patientType': { $regex: search, $options: 'i' } },
-
         ];
     }
     if (type) {
