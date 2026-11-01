@@ -41,6 +41,7 @@ class UserModel {
   final String phone;
   final String role;
   final String? avatarUrl;
+  final int? employeeID;
 
   UserModel({
     required this.id,
@@ -50,6 +51,7 @@ class UserModel {
     required this.phone,
     required this.role,
     this.avatarUrl,
+    this.employeeID,
   });
 
   bool get isDonorOrMother => role == 'User';
@@ -68,7 +70,12 @@ class UserModel {
           : null,
       phone: json['phone'] ?? '',
       role: json['role'] ?? 'User',
-      avatarUrl: json['avatar'] is Map ? json['avatar']['url'] : null,
+      avatarUrl: json['avatar'] is Map
+          ? json['avatar']['url']
+          : (json['avatar'] is String ? json['avatar'] : null),
+      employeeID: json['employeeID'] != null
+          ? int.tryParse(json['employeeID'].toString())
+          : null,
     );
   }
 
@@ -80,6 +87,8 @@ class UserModel {
       if (email != null) 'email': email,
       'phone': phone,
       'role': role,
+      if (employeeID != null) 'employeeID': employeeID,
+      if (avatarUrl != null) 'avatar': {'url': avatarUrl},
     };
   }
 }

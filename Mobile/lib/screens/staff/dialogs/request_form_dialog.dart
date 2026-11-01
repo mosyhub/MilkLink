@@ -25,15 +25,15 @@ class RequestFormDialog extends StatefulWidget {
 class _RequestFormDialogState extends State<RequestFormDialog> {
   final _formKey = GlobalKey<FormState>();
   String? _selectedPatientId;
-  late String _patientType;
-  late TextEditingController _diagnosisController;
-  late TextEditingController _reasonController;
-  late TextEditingController _doctorController;
-  late TextEditingController _locationController;
-  late TextEditingController _volumeController;
-  late TextEditingController _daysController;
-  late TextEditingController _commentController;
-  late String _status;
+  String _patientType = 'Inpatient';
+  final TextEditingController _diagnosisController = TextEditingController();
+  final TextEditingController _reasonController = TextEditingController();
+  final TextEditingController _doctorController = TextEditingController();
+  final TextEditingController _locationController = TextEditingController();
+  final TextEditingController _volumeController = TextEditingController();
+  final TextEditingController _daysController = TextEditingController();
+  final TextEditingController _commentController = TextEditingController();
+  String _status = 'Pending';
   DateTime? _requestDate;
   bool _isSubmitting = false;
 
@@ -46,13 +46,13 @@ class _RequestFormDialogState extends State<RequestFormDialog> {
     final r = widget.initialRequest;
     _selectedPatientId = r?.patientId.isNotEmpty == true ? r!.patientId : (widget.availablePatients.isNotEmpty ? widget.availablePatients.first.id : null);
     _patientType = r?.patientType ?? 'Inpatient';
-    _diagnosisController = TextEditingController(text: r?.diagnosis ?? '');
-    _reasonController = TextEditingController(text: r?.reason ?? '');
-    _doctorController = TextEditingController(text: r?.doctor ?? '');
-    _locationController = TextEditingController(text: r?.department ?? r?.hospital ?? 'NICU');
-    _volumeController = TextEditingController(text: r != null && r.volume > 0 ? r.volume.toStringAsFixed(0) : '200');
-    _daysController = TextEditingController(text: r != null && r.days > 0 ? r.days.toString() : '3');
-    _commentController = TextEditingController(text: r?.comment ?? '');
+    _diagnosisController.text = r?.diagnosis ?? '';
+    _reasonController.text = r?.reason ?? '';
+    _doctorController.text = r?.doctor ?? '';
+    _locationController.text = r?.department ?? r?.hospital ?? 'NICU';
+    _volumeController.text = r != null && r.volume > 0 ? r.volume.toStringAsFixed(0) : '200';
+    _daysController.text = r != null && r.days > 0 ? r.days.toString() : '3';
+    _commentController.text = r?.comment ?? '';
     _status = r?.status ?? 'Pending';
     _requestDate = r?.date ?? DateTime.now();
   }

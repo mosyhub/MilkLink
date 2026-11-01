@@ -13,7 +13,9 @@ import '../auth/login_screen.dart';
 import 'dialogs/donor_form_dialog.dart';
 import 'dialogs/patient_form_dialog.dart';
 import 'dialogs/request_form_dialog.dart';
+import '../profile/edit_profile_screen.dart';
 import '../../widgets/stacked_data_card.dart';
+import '../../widgets/user_avatar.dart';
 
 /// Which section of the staff portal is currently open.
 /// null = the card-grid dashboard (home).
@@ -121,28 +123,9 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
   // ───────────────────────────────────────────────────────────────────────────
 
   void _showProfile() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Staff Profile', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text('Role: Staff', style: TextStyle(fontSize: 14)),
-            SizedBox(height: 6),
-            Text('Pasig Human Milk Bank',
-                style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const EditProfileScreen()),
     );
   }
 
@@ -772,11 +755,16 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
           },
           child: Padding(
             padding: const EdgeInsets.only(right: 14, left: 4),
-            child: CircleAvatar(
-              radius: 17,
-              backgroundColor: Colors.white,
-              child: const Icon(Icons.person, color: AppColors.accentPink, size: 22),
-            ),
+            child: Builder(builder: (ctx) {
+              final user = Provider.of<AuthProvider>(ctx).user;
+              return UserAvatar(
+                radius: 17,
+                avatarUrl: user?.avatarUrl,
+                initial: user?.name.first.isNotEmpty == true ? user!.name.first : 'S',
+                backgroundColor: Colors.white,
+                textColor: AppColors.primaryNavy,
+              );
+            }),
           ),
           itemBuilder: (ctx) => const [
             PopupMenuItem(

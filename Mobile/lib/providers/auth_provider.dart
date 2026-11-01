@@ -369,6 +369,81 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Update logged in user profile (name, username, email, phone, avatar, employeeID, password)
+  Future<bool> updateProfile(Map<String, dynamic> data) async {
+    _status = AuthStatus.loading;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await ApiClient.put(
+        ApiConstants.updateProfile,
+        data: data,
+        requiresAuth: true,
+      );
+
+      if (response['success'] == true && response['user'] != null) {
+        _user = UserModel.fromJson(response['user']);
+        _status = AuthStatus.authenticated;
+        notifyListeners();
+        return true;
+      } else {
+        throw ApiException(response['message'] ?? 'Profile update failed');
+      }
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      _status = AuthStatus.error;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _errorMessage = 'An error occurred while updating profile: $e';
+      _status = AuthStatus.error;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Change password explicitly via /password/update
+  Future<bool> updatePassword({
+    required String oldPassword,
+    required String password,
+    required String confirmPassword,
+  }) async {
+    _status = AuthStatus.loading;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await ApiClient.put(
+        ApiConstants.updatePassword,
+        data: {
+          'oldPassword': oldPassword,
+          'password': password,
+          'confirmPassword': confirmPassword,
+        },
+        requiresAuth: true,
+      );
+
+      if (response['success'] == true) {
+        _status = AuthStatus.authenticated;
+        notifyListeners();
+        return true;
+      } else {
+        throw ApiException(response['message'] ?? 'Password update failed');
+      }
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      _status = AuthStatus.error;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _errorMessage = 'An error occurred while updating password: $e';
+      _status = AuthStatus.error;
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<void> logout() async {
     await SessionManager.clearSession();
     _user = null;

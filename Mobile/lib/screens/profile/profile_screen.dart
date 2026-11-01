@@ -5,6 +5,8 @@ import '../../providers/auth_provider.dart';
 import '../../providers/donor_provider.dart';
 import '../auth/login_screen.dart';
 import '../staff/staff_dashboard_screen.dart';
+import '../../widgets/user_avatar.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -70,19 +72,14 @@ class ProfileScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  CircleAvatar(
+                  UserAvatar(
                     radius: 36,
+                    avatarUrl: user?.avatarUrl,
+                    initial: user?.name.first.isNotEmpty == true
+                        ? user!.name.first[0].toUpperCase()
+                        : 'M',
                     backgroundColor: AppColors.softPink,
-                    child: Text(
-                      user?.name.first.isNotEmpty == true
-                          ? user!.name.first[0].toUpperCase()
-                          : 'M',
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.accentPink,
-                      ),
-                    ),
+                    textColor: AppColors.accentPink,
                   ),
                   const SizedBox(height: 12),
                   Text(
@@ -111,12 +108,35 @@ class ProfileScreen extends StatelessWidget {
                     child: Text(
                       donor != null
                           ? 'DONOR: ${donor.donorType.toUpperCase()}'
-                          : 'REGISTERED USER',
+                          : (user?.role.toUpperCase() ?? 'REGISTERED USER'),
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                         color: AppColors.accentPink,
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+                      );
+                    },
+                    icon: const Icon(Icons.edit_outlined, size: 16, color: AppColors.primaryNavy),
+                    label: const Text(
+                      'Edit Profile',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryNavy,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                      side: const BorderSide(color: AppColors.primaryNavy),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                     ),
                   ),
                 ],
