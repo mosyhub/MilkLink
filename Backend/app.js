@@ -15,7 +15,7 @@ const jwt = require('jsonwebtoken');
 dotenv.config({ path: 'config/.env' });
 
 const corsOptions = {
-    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://192.168.7.85', 'http://192.168.5.235:8081', 'http://192.168.5.234:8081', 'https://tchmb-portal.vercel.app'], // Add your frontend's URL here
+    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://192.168.7.85', 'http://192.168.5.235:8081', 'http://192.168.5.234:8081', 'https://milklink-portal.vercel.app'], // Add your frontend's URL here
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],

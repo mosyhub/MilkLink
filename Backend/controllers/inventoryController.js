@@ -391,7 +391,7 @@ exports.reserveInventoryForRequest = catchAsyncErrors(
 
       const updatedRequest = await Request.findByIdAndUpdate(
         req.params.id,
-        { $push: { "tchmb.ebm": { $each: ebmData } } },
+        { $push: { "milklink.ebm": { $each: ebmData } } },
         { new: true }
       );
 

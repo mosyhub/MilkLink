@@ -451,7 +451,7 @@ exports.newPublicDonorTally = catchAsyncErrors(async (req, res, next) => {
       home_address: {
         street: data.street,
         brgy: data.brgy,
-        city: data.city || "Taguig City",
+        city: data.city || "Pasig City",
       },
       age: { value: donorAge, unit: donorUnit },
       birthday: data.birthday,
@@ -528,7 +528,7 @@ exports.newPublicDonor = catchAsyncErrors(async (req, res, next) => {
       home_address: {
         street: formData.street,
         brgy: formData.brgy,
-        city: formData.city || "Taguig City",
+        city: formData.city || "Pasig City",
       },
       age: { value: age, unit: unit },
       birthday: formData.birthday,

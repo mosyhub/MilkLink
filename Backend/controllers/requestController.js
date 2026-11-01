@@ -10,8 +10,8 @@ exports.allRequests = catchAsyncErrors(async (req, res, next) => {
   const requests = await Request.find()
     .populate("patient", "name patientType")
     .populate("requestedBy", "name employeeID")
-    .populate("tchmb.approvedBy", "name email role")
-    .populate("tchmb.ebm", "pasteurizedDetails");
+    .populate("milklink.approvedBy", "name email role")
+    .populate("milklink.ebm", "pasteurizedDetails");
 
   const count = await Request.countDocuments();
 
@@ -87,8 +87,8 @@ exports.getRequestDetails = catchAsyncErrors(async (req, res, next) => {
   const request = await Request.findById(req.params.id)
     .populate("patient", "name patientType")
     .populate("requestedBy", "name employeeID")
-    .populate("tchmb.approvedBy", "name email role")
-    .populate("tchmb.ebm", "pasteurizedDetails");
+    .populate("milklink.approvedBy", "name email role")
+    .populate("milklink.ebm", "pasteurizedDetails");
 
   if (!request) {
     return next(
@@ -171,7 +171,7 @@ exports.updateRequest = catchAsyncErrors(async (req, res, next) => {
       newData = {
         ...data,
         department: data.location,
-        hospital: "Taguig-Pateros District Hospital",
+        hospital: "Pasig-Pateros District Hospital",
       };
     } else {
       newData = { ...data, department: null, hospital: data.location };
@@ -233,7 +233,7 @@ exports.updateRequestStatus = catchAsyncErrors(async (req, res, next) => {
     }
     request.status = status;
     request.comment = comment;
-    request.tchmb.disapprovedBy = user;
+    request.milklink.disapprovedBy = user;
     await request.save();
 
     res.status(200).json({
@@ -254,8 +254,8 @@ exports.myRequests = catchAsyncErrors(async (req, res, next) => {
   const requests = await Request.find({ requestedBy: req.params.id })
     .populate("patient", "name patientType")
     .populate("requestedBy", "name employeeID")
-    .populate("tchmb.approvedBy", "name email role")
-    .populate("tchmb.ebm", "pasteurizedDetails");
+    .populate("milklink.approvedBy", "name email role")
+    .populate("milklink.ebm", "pasteurizedDetails");
 
   const count = requests.length;
 
@@ -299,7 +299,7 @@ exports.inpatientDispense = catchAsyncErrors(async (req, res) => {
     }
 
     for (const reqItem of request) {
-      for (const ebm of reqItem.tchmb.ebm) {
+      for (const ebm of reqItem.milklink.ebm) {
         const { invId, bottle } = ebm;
 
         const inventory = await Inventory.findById(invId);
@@ -339,9 +339,9 @@ exports.inpatientDispense = catchAsyncErrors(async (req, res) => {
         return next(new ErrorHandler("Request not found", 404));
       }
       updatedRequest.status = "Done";
-      updatedRequest.tchmb.transport = transport;
-      updatedRequest.tchmb.dispenseAt = dispenseAt;
-      updatedRequest.tchmb.approvedBy = approvedBy;
+      updatedRequest.milklink.transport = transport;
+      updatedRequest.milklink.dispenseAt = dispenseAt;
+      updatedRequest.milklink.approvedBy = approvedBy;
       await updatedRequest.save();
     }
 
@@ -362,11 +362,11 @@ exports.outpatientDispense = catchAsyncErrors(async (req, res) => {
   const { request, transport, approvedBy, dispenseAt } = req.body;
   // console.log(req.body)
   try {
-    if (!Array.isArray(request.tchmb.ebm) || request.tchmb.ebm.length === 0) {
+    if (!Array.isArray(request.milklink.ebm) || request.milklink.ebm.length === 0) {
       return next(new ErrorHandler("Request data are required.", 400));
     }
 
-    for (const ebm of request.tchmb.ebm) {
+    for (const ebm of request.milklink.ebm) {
       const { invId, bottle } = ebm;
 
       const inventory = await Inventory.findById(invId);
@@ -403,9 +403,9 @@ exports.outpatientDispense = catchAsyncErrors(async (req, res) => {
       return next(new ErrorHandler("Request not found", 404));
     }
     updatedRequest.status = "Done";
-    updatedRequest.tchmb.transport = transport;
-    updatedRequest.tchmb.dispenseAt = dispenseAt;
-    updatedRequest.tchmb.approvedBy = approvedBy;
+    updatedRequest.milklink.transport = transport;
+    updatedRequest.milklink.dispenseAt = dispenseAt;
+    updatedRequest.milklink.approvedBy = approvedBy;
 
     await updatedRequest.save();
 

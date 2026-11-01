@@ -153,7 +153,7 @@ exports.getDispensedMilk = catchAsyncErrors(async (req, res, next) => {
 
     console.log("Start Date:", startDate.toISOString());
     console.log("End Date:", endDate.toISOString());
-    const requests = await Request.find({ status: "Done", "tchmb.dispenseAt": { $gte: startDate, $lt: endDate } });
+    const requests = await Request.find({ status: "Done", "milklink.dispenseAt": { $gte: startDate, $lt: endDate } });
 
     const stats = {};
 
@@ -163,7 +163,7 @@ exports.getDispensedMilk = catchAsyncErrors(async (req, res, next) => {
 
       if (!isOutpatient && !isInpatient) return;
 
-      const rawDate = request.tchmb.dispenseAt;
+      const rawDate = request.milklink.dispenseAt;
       const parsedDate = new Date(rawDate);
       let month = "";
       if (!isNaN(parsedDate)) {
@@ -174,7 +174,7 @@ exports.getDispensedMilk = catchAsyncErrors(async (req, res, next) => {
         // optionally skip this entry or put it in a separate error log
       }
 
-      const volume = request.tchmb.ebm
+      const volume = request.milklink.ebm
         .map((item) => item.volDischarge || 0)
         .reduce((sum, vol) => sum + vol, 0);
 
@@ -485,7 +485,7 @@ exports.getDonationLocations = catchAsyncErrors(async (req, res, next) => {
     const normalizeCity = (rawCity = '') => {
       let normalized = rawCity.trim().toLowerCase();
       normalized = normalized.replace(/\b(city|municipality)\b/g, '').trim();
-      return normalized.split(' ')[0]; // main keyword (e.g., "taguig")
+      return normalized.split(' ')[0]; // main keyword (e.g., "Pasig")
     };
 
     allBags.forEach(bag => {

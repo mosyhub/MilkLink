@@ -48,7 +48,7 @@ const equipmentSchema = new mongoose.Schema({
     ],
     invBy: {
         type: ObjectId,
-        required: [true, 'TCHMB ADMIN ID required'],
+        required: [true, 'MilkLink ADMIN ID required'],
         ref: 'User'
     },
     images: [

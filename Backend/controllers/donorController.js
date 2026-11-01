@@ -118,7 +118,7 @@ exports.predictEligibility = catchAsyncErrors(async (req, res, next) => {
 
         const relevantQuestions = [
             "Have you donated breast milk before? (Nakapagbigay ka na ba ng iyong gatas dati?)",
-            "Will you be allowed by your husband to donate your breast milk to the Taguig City Human Milk Bank? (Papayagan ka ba ng iyong asawa na magbigay ng iyong gatas sa Taguig City Human Milk Bank?)",
+            "Will you be allowed by your husband to donate your breast milk to the Pasig City Human Milk Bank? (Papayagan ka ba ng iyong asawa na magbigay ng iyong gatas sa Pasig City Human Milk Bank?)",
             "Have you for any reason been deferred as a milk donor? (Ikaw ba ay natangihan na magbigay ng iyong gatas / breastmilk?)",
             "Did you have a normal pregnancy and delivery for your most recent pregnancy? (Normal ba ang panganganak mo sa huli mong anak?)",
             "Do you have any acute or chronic infection, systemic disorders, tuberculosis or history of hepatitis? (Mayroon ka bang kahit anong impeksyon o sakit? Nagkaroon ng sakit sa atay dati?)",
@@ -242,7 +242,7 @@ exports.predictEligibility = catchAsyncErrors(async (req, res, next) => {
                 home_address: {
                     street: new_data.Street,
                     brgy: new_data.brgy,
-                    city: new_data.city || 'Taguig City'
+                    city: new_data.city || 'Pasig City'
                 },
                 birthday: new_data.birthday,
                 children: children,
@@ -345,7 +345,7 @@ exports.testDonors = catchAsyncErrors(async (req, res, next) => {
             home_address: {
                 street: data.Street,
                 brgy: data.brgy,
-                city: data.city || 'Taguig City'
+                city: data.city || 'Pasig City'
             },
             age: data.age,
             birthday: data.birthday,

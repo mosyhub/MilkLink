@@ -16,7 +16,7 @@ const requestSchema = new mongoose.Schema({
   },
   hospital: {
     type: String,
-    default: "Taguig-Pateros District Hospital",
+    default: "Pasig-Pateros District Hospital",
   },
   diagnosis: {
     type: String,
@@ -61,7 +61,7 @@ const requestSchema = new mongoose.Schema({
     type: String,
     enum: ["Inpatient", "Outpatient"],
   },
-  tchmb: {
+  milklink: {
     ebm: [
       {
         invId: {
