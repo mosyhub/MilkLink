@@ -45,6 +45,102 @@ class DonorProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<Map<String, dynamic>> registerFirstTimeDonor({
+    required String firstName,
+    String? middleName,
+    required String lastName,
+    required DateTime birthday,
+    required String street,
+    required String brgy,
+    String city = 'Pasig City',
+    required String contactNumber,
+    String? occupation,
+    String donorType = 'Community',
+    String? childName,
+    DateTime? childBirthday,
+    String? birthWeight,
+    String? breastfeedingInfo,
+    Map<String, dynamic>? questionnaireAnswers,
+  }) async {
+    _status = DonorStatus.loading;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final payload = {
+        'firstName': firstName,
+        'middleName': middleName,
+        'lastName': lastName,
+        'birthday': birthday.toIso8601String(),
+        'street': street,
+        'brgy': brgy,
+        'city': city,
+        'contactNumber': contactNumber,
+        'occupation': occupation,
+        'donorType': donorType,
+        'childName': childName,
+        'childBirthday': childBirthday?.toIso8601String(),
+        'birthWeight': birthWeight,
+        'breastfeedingInfo': breastfeedingInfo,
+        'questionnaireAnswers': questionnaireAnswers,
+      };
+
+      final response = await ApiClient.post(
+        ApiConstants.donorRegister,
+        data: payload,
+        requiresAuth: false,
+      );
+
+      if (response['success'] == true) {
+        if (response['donor'] != null) {
+          _donor = DonorModel.fromJson(response['donor']);
+          _hasDonorProfile = true;
+          _status = DonorStatus.loaded;
+        }
+        notifyListeners();
+        return {
+          'success': true,
+          'donorId': response['donorId'],
+          'qrCodeData': response['qrCodeData'],
+          'claimToken': response['claimToken'],
+          'nextSteps': response['nextSteps'] ?? [],
+        };
+      }
+
+      _errorMessage = response['message'] ?? 'Registration failed';
+      _status = DonorStatus.error;
+      notifyListeners();
+      return {'success': false, 'message': _errorMessage};
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      _status = DonorStatus.error;
+      notifyListeners();
+      return {'success': false, 'message': e.message};
+    } catch (e) {
+      _errorMessage = 'Registration error: ${e.toString()}';
+      _status = DonorStatus.error;
+      notifyListeners();
+      return {'success': false, 'message': _errorMessage};
+    }
+  }
+
+  Future<List<DonorModel>> searchReturningDonor(String query) async {
+    try {
+      final response = await ApiClient.get(
+        '${ApiConstants.donorSearchReturning}?query=${Uri.encodeComponent(query)}',
+        requiresAuth: false,
+      );
+      if (response['success'] == true && response['donors'] is List) {
+        return (response['donors'] as List)
+            .map((d) => DonorModel.fromJson(d as Map<String, dynamic>))
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
   Future<bool> submitScreeningApplication({
     required String street,
     required String brgy,

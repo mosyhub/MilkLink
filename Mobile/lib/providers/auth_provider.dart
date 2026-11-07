@@ -11,10 +11,27 @@ class AuthProvider extends ChangeNotifier {
   UserModel? _user;
   String? _errorMessage;
 
+  // Granular Status Dimensions
+  String _accountStatus = 'Active';
+  String _donorRegistrationStatus = 'Unregistered';
+  String _donorEligibilityStatus = 'Not Screened';
+  bool _isDonorEligible = false;
+  String _milkRequestStatus = 'None';
+  bool _hasActiveMilkRequest = false;
+  Map<String, dynamic>? _donorProfile;
+
   AuthStatus get status => _status;
   UserModel? get user => _user;
   String? get errorMessage => _errorMessage;
   bool get isAuthenticated => _status == AuthStatus.authenticated && _user != null;
+
+  String get accountStatus => _accountStatus;
+  String get donorRegistrationStatus => _donorRegistrationStatus;
+  String get donorEligibilityStatus => _donorEligibilityStatus;
+  bool get isDonorEligible => _isDonorEligible;
+  String get milkRequestStatus => _milkRequestStatus;
+  bool get hasActiveMilkRequest => _hasActiveMilkRequest;
+  Map<String, dynamic>? get donorProfile => _donorProfile;
 
   Future<void> init() async {
     _status = AuthStatus.loading;
@@ -40,6 +57,13 @@ class AuthProvider extends ChangeNotifier {
       final response = await ApiClient.get(ApiConstants.userProfile);
       if (response['success'] == true && response['user'] != null) {
         _user = UserModel.fromJson(response['user']);
+        _accountStatus = response['accountStatus'] ?? 'Active';
+        _donorRegistrationStatus = response['donorRegistrationStatus'] ?? 'Unregistered';
+        _donorEligibilityStatus = response['donorEligibilityStatus'] ?? 'Not Screened';
+        _isDonorEligible = response['isDonorEligible'] == true;
+        _milkRequestStatus = response['milkRequestStatus'] ?? 'None';
+        _hasActiveMilkRequest = response['hasActiveMilkRequest'] == true;
+        _donorProfile = response['donorProfile'];
         _status = AuthStatus.authenticated;
       } else {
         await SessionManager.clearSession();
@@ -50,6 +74,26 @@ class AuthProvider extends ChangeNotifier {
       _status = AuthStatus.unauthenticated;
     }
     notifyListeners();
+  }
+
+  /// Securely links an existing staff-created donor record to the verified account
+  Future<Map<String, dynamic>> linkExistingDonorRecord(String tokenOrQr) async {
+    try {
+      final response = await ApiClient.post(
+        ApiConstants.linkDonorRecord,
+        data: {'claimToken': tokenOrQr.trim()},
+      );
+
+      if (response['success'] == true) {
+        await loadCurrentUser();
+        return {'success': true, 'message': response['message'] ?? 'Donor record linked successfully.'};
+      }
+      return {'success': false, 'message': response['message'] ?? 'Failed to link donor record'};
+    } on ApiException catch (e) {
+      return {'success': false, 'message': e.message};
+    } catch (e) {
+      return {'success': false, 'message': 'An unexpected error occurred'};
+    }
   }
 
   /// Login using a username OR email as the identifier.

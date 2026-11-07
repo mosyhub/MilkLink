@@ -8,6 +8,7 @@ import '../main_navigation_screen.dart';
 import '../staff/staff_dashboard_screen.dart';
 import 'claim_record_screen.dart';
 import 'forgot_password_screen.dart';
+import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -170,9 +171,37 @@ class _LoginScreenState extends State<LoginScreen> {
                     isLoading: authProvider.status == AuthStatus.loading,
                     onPressed: _handleLogin,
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 14),
 
-                  // Claim / Setup Account via QR or Token Card (No public self-registration)
+                  // Self-Registration Link
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        "Don't have an account?",
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                          );
+                        },
+                        child: const Text(
+                          'Create Account',
+                          style: TextStyle(
+                            color: AppColors.accentPink,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Claim / Setup Account via QR or Token Card
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
@@ -226,7 +255,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             },
                             icon: const Icon(Icons.qr_code_2, size: 20),
                             label: const Text(
-                              'Link Profile / Setup Account via QR or Token',
+                              'Claim Existing Hospital Account',
                               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                             ),
                           ),

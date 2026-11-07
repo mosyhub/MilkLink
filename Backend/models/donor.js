@@ -3,11 +3,17 @@ const { ObjectId } = mongoose.Schema.Types;
 const softDeletePlugin = require('./plugins/softDelete');
 
 const donorSchema = new mongoose.Schema({
+  donorId: {
+    type: String,
+    unique: true,
+    sparse: true,
+    trim: true,
+    index: true,
+  },
   user: {
     type: ObjectId,
     ref: "User",
     default: null,
-    index: true,
   },
   staff: {
     type: ObjectId,
@@ -128,7 +134,7 @@ const donorSchema = new mongoose.Schema({
       donationType: {
         type: String,
         enum: ["Public", "Private"],
-        required: true,
+        default: "Public",
       },
       schedule: {
         type: ObjectId,
@@ -141,13 +147,94 @@ const donorSchema = new mongoose.Schema({
       totalVolume: {
         type: Number,
       },
+      numberOfBags: {
+        type: Number,
+        default: 1,
+      },
+      collectionDate: {
+        type: Date,
+        default: Date.now,
+      },
+      batchReference: {
+        type: String,
+      },
+      status: {
+        type: String,
+        enum: [
+          'Collected',
+          'For Inspection',
+          'For Processing',
+          'Pasteurized',
+          'Quality-Control Review',
+          'Available for Dispensing',
+          'Dispensed',
+          'On Hold',
+          'Rejected',
+          'Expired'
+        ],
+        default: 'Collected',
+      },
+      recordedBy: {
+        type: ObjectId,
+        ref: "User",
+      },
+      notes: {
+        type: String,
+      },
     },
   ],
+  screening: {
+    questionnaire: {
+      type: Map,
+      of: String,
+      default: {},
+    },
+    laboratory: {
+      cbc: { type: String, default: null },
+      hiv: { type: String, default: null },
+      hbsag: { type: String, default: null },
+      antiHcv: { type: String, default: null },
+      labDateTested: { type: Date, default: null },
+      documents: [
+        {
+          category: {
+            type: String,
+            enum: ['CBC', 'HIV', 'HBsAg', 'Anti-HCV', 'Other'],
+            required: true,
+          },
+          url: { type: String, required: true },
+          public_id: { type: String },
+          fileName: { type: String },
+          fileType: { type: String },
+          uploadedAt: { type: Date, default: Date.now },
+          verified: { type: Boolean, default: false },
+          ocrExtractedText: { type: String, default: null },
+          ocrExtractedData: { type: mongoose.Schema.Types.Mixed, default: null },
+        }
+      ],
+    },
+    consentSigned: { type: Boolean, default: false },
+    consentDate: { type: Date, default: null },
+    consentVersion: { type: String, default: '1.0' },
+    signatureUrl: { type: String, default: null },
+    reviewNotes: { type: String, default: '' },
+    reviewedBy: { type: ObjectId, ref: 'User' },
+    reviewedAt: { type: Date, default: null },
+  },
   createdAt: {
     type: Date,
     default: Date.now,
   },
 });
+
+// Enforce unique 1-to-1 linkage for claimed donors (ignoring unclaimed null users)
+donorSchema.index(
+  { user: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { isDeleted: false, user: { $type: 'objectId' } }
+  }
+);
 
 donorSchema.plugin(softDeletePlugin);
 

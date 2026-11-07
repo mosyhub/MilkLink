@@ -6,6 +6,7 @@ import '../../providers/donor_provider.dart';
 import '../../widgets/stat_card.dart';
 import '../../widgets/status_badge.dart';
 import 'donor_screening_screen.dart';
+import 'milk_status_tracking_screen.dart';
 
 class DonationHistoryScreen extends StatelessWidget {
   const DonationHistoryScreen({Key? key}) : super(key: key);
@@ -121,7 +122,17 @@ class DonationHistoryScreen extends StatelessWidget {
                     separatorBuilder: (_, __) => const SizedBox(height: 10),
                     itemBuilder: (context, index) {
                       final item = donor.donations[index];
-                      return Container(
+                      return InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => MilkStatusTrackingScreen(donation: item),
+                            ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(14),
+                        child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: Colors.white,
@@ -154,6 +165,11 @@ class DonationHistoryScreen extends StatelessWidget {
                                         : 'Recorded Donation',
                                     style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                                   ),
+                                  const SizedBox(height: 4),
+                                  const Text(
+                                    'Tap to track milk processing status',
+                                    style: TextStyle(fontSize: 11, color: AppColors.accentPink, fontWeight: FontWeight.w500),
+                                  ),
                                 ],
                               ),
                             ),
@@ -167,6 +183,7 @@ class DonationHistoryScreen extends StatelessWidget {
                             ),
                           ],
                         ),
+                      ),
                       );
                     },
                   ),

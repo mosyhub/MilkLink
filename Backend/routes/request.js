@@ -14,10 +14,16 @@ const {
     myRequests,
     updateVolumeRequested,
     inpatientDispense,
-    outpatientDispense
+    outpatientDispense,
+    donorSubmitMilkRequest,
+    getMyMilkRequests
 } = require('../controllers/requestController');
 
 const { isAuthenticatedUser, authorizeRoles } = require('../middlewares/auth');
+
+// Donor Milk Request Routes
+router.post('/donor/request-milk', isAuthenticatedUser, donorSubmitMilkRequest);
+router.get('/donor/my-requests', isAuthenticatedUser, getMyMilkRequests);
 
 router.get('/requests/archived', isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin', 'Staff'), archivedRequests);
 

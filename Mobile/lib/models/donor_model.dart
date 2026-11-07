@@ -116,6 +116,8 @@ class DonationRecord {
 
 class DonorModel {
   final String id;
+  final String? donorId;
+  final String? qrCodeData;
   final HomeAddress homeAddress;
   final DateTime? birthday;
   final String? contactNumber;
@@ -141,6 +143,8 @@ class DonorModel {
 
   DonorModel({
     required this.id,
+    this.donorId,
+    this.qrCodeData,
     required this.homeAddress,
     this.birthday,
     this.contactNumber,
@@ -233,6 +237,8 @@ class DonorModel {
 
     return DonorModel(
       id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
+      donorId: json['donorId']?.toString(),
+      qrCodeData: json['qrCodeData']?.toString(),
       homeAddress: json['home_address'] is Map<String, dynamic>
           ? HomeAddress.fromJson(json['home_address'])
           : HomeAddress(street: '', brgy: '', city: ''),
