@@ -1,8 +1,7 @@
 class ApiConstants {
   // ── Connection ─────────────────────────────────────────────────────────────
-  // 10.0.2.2 = Android's permanent alias for the development machine's
-  // localhost. Works on all emulators and physical devices (with adb reverse).
-  static const String _host = '10.0.2.2';
+  // Change to '10.0.2.2' if using an Android Emulator, or your computer's local Wi-Fi IP for physical devices.
+  static const String _host = '192.168.100.8';
 
   // Keep in sync with PORT in Backend/config/.env
   static const int _port = 4000;
@@ -18,15 +17,28 @@ class ApiConstants {
   static String get selfRegister => '$baseUrl/self-register';
   static String get verifyClaim => '$baseUrl/verify-claim';
   static String get claimRecord => '$baseUrl/claim-record';
+  static String get linkDonorRecord => '$baseUrl/user/link-donor';
   static String get login => '$baseUrl/login';
   static String get userProfile => '$baseUrl/me';
   static String get updateProfile => '$baseUrl/me/update';
   static String get updatePassword => '$baseUrl/password/update';
   static String get forgotPassword => '$baseUrl/password/reset';
 
+  // ── Screening Appointments Endpoints ─────────────────────────────────────────
+  static String get screeningSlots => '$baseUrl/screening/slots';
+  static String get bookScreeningAppointment => '$baseUrl/screening/book';
+  static String get myScreeningAppointments => '$baseUrl/screening/my-appointments';
+  static String cancelScreeningAppointment(String id) => '$baseUrl/screening/appointment/$id/cancel';
+  static String rescheduleScreeningAppointment(String id) => '$baseUrl/screening/appointment/$id/reschedule';
+  static String get staffScreeningAppointments => '$baseUrl/staff/screening/appointments';
+  static String staffAppointmentStatus(String id) => '$baseUrl/staff/screening/appointment/$id/status';
+  static String staffCompleteScreening(String id) => '$baseUrl/staff/screening/appointment/$id/complete-screening';
+
   // ── Donor Endpoints ────────────────────────────────────────────────────────
+  static String get donorRegister => '$baseUrl/donor/register';
+  static String get donorSearchReturning => '$baseUrl/donor/search-returning';
   static String get donorMe => '$baseUrl/donor/me';
-  static String get submitDonorApplication => '$baseUrl/donors';
+  static String get submitDonorApplication => '$baseUrl/donor/register';
   static String get checkEligibility => '$baseUrl/check-eligibility';
 
   // ── Events & Schedules Endpoints ───────────────────────────────────────────
@@ -46,6 +58,9 @@ class ApiConstants {
   // Donors
   static String get donors => '$baseUrl/donors';
   static String get staffDonorsDashboard => '$baseUrl/staff/donors/dashboard';
+  static String get staffPendingRegistrations => '$baseUrl/staff/pending-registrations';
+  static String staffLinkUserToDonor(String userId) => '$baseUrl/staff/user/$userId/link-donor';
+  static String staffCreateDonorForUser(String userId) => '$baseUrl/staff/user/$userId/create-donor';
   static String get staffCreateDonor => '$baseUrl/staff/donor';
   static String get archivedDonors => '$baseUrl/donors/archived';
   static String donorById(String id) => '$baseUrl/donor/$id';

@@ -470,3 +470,85 @@ exports.archivedRequests = catchAsyncErrors(async (req, res) => {
     requests,
   });
 });
+
+// Donor Submit Milk Request => /api/v1/donor/request-milk
+exports.donorSubmitMilkRequest = catchAsyncErrors(async (req, res, next) => {
+  const {
+    recipientName,
+    recipientDob,
+    relationToRecipient = "Mother",
+    hospitalOrHomeAddress,
+    reasonForRequest,
+    volumeRequested,
+    feedingDurationDays = 7,
+    supportingDocuments = [],
+    additionalRemarks
+  } = req.body;
+
+  if (!recipientName || !volumeRequested || !reasonForRequest) {
+    return next(new ErrorHandler("Please provide recipient name, requested volume, and medical reason", 400));
+  }
+
+  // Create temporary or linked patient record for tracking
+  let patient = await Patient.findOne({
+    "name.first": recipientName.split(" ")[0],
+    "name.last": recipientName.split(" ").slice(1).join(" ") || "Child"
+  });
+
+  if (!patient) {
+    patient = await Patient.create({
+      name: {
+        first: recipientName.split(" ")[0],
+        last: recipientName.split(" ").slice(1).join(" ") || "Child"
+      },
+      patientType: "Outpatient",
+      diagnosis: reasonForRequest,
+      birthday: recipientDob ? new Date(recipientDob) : new Date(),
+      home_address: {
+        street: hospitalOrHomeAddress || "Pasig City",
+        brgy: "Community",
+        city: "Pasig City"
+      }
+    });
+  }
+
+  const newRequest = await Request.create({
+    patient: patient._id,
+    requestedBy: req.user ? req.user._id : null,
+    volumeRequested: Number(volumeRequested),
+    hospital: hospitalOrHomeAddress || "Pasig City Residence / PPDH",
+    patientType: "Outpatient",
+    reasonForRequest,
+    notes: additionalRemarks ? `Duration: ${feedingDurationDays} days. Remarks: ${additionalRemarks}` : `Duration: ${feedingDurationDays} days`,
+    status: "Pending",
+    date: new Date()
+  });
+
+  patient.requested.push(newRequest._id);
+  await patient.save();
+
+  res.status(201).json({
+    success: true,
+    message: "Milk request submitted successfully. Awaiting healthcare personnel review and approval.",
+    request: newRequest
+  });
+});
+
+// Get Donor My Milk Requests => /api/v1/donor/my-requests
+exports.getMyMilkRequests = catchAsyncErrors(async (req, res, next) => {
+  if (!req.user) {
+    return next(new ErrorHandler("Authentication required", 401));
+  }
+
+  const requests = await Request.find({ requestedBy: req.user._id, isDeleted: false })
+    .populate("patient", "name patientType diagnosis")
+    .populate("milklink.approvedBy", "name email role")
+    .sort({ createdAt: -1 });
+
+  res.status(200).json({
+    success: true,
+    count: requests.length,
+    requests
+  });
+});
+

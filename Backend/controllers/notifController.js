@@ -149,14 +149,57 @@ console.log(req.body)
 
   const notifDoc = await Notification.findOne({ user: userId });
   console.log(notifDoc)
-  for (let token of notifDoc.expoTokens) {
-    const response = await sendPushNotification(token, title, body);
+  if (notifDoc) {
+    for (let token of (notifDoc.expoTokens || [])) {
+      try {
+        await sendPushNotification(token, title, body);
+      } catch (err) {
+        console.error("Push error:", err);
+      }
+    }
+    notifDoc.notifications.push({ title, body, notifiedAt: new Date() });
+    await notifDoc.save();
   }
-  notifDoc.notifications.push({ title, body });
-  await notifDoc.save();
 
   res.status(200).json({
     success: true,
     message: "Notification sent",
   });
 });
+
+// Helper for programmatic pasteurization and processing notification delivery
+exports.notifyDonorMilkMilestone = async ({ donorId, userId, title, body }) => {
+  try {
+    let targetUserId = userId;
+    if (!targetUserId && donorId) {
+      const Donor = require('../models/donor');
+      const d = await Donor.findById(donorId).select('user');
+      if (d && d.user) targetUserId = d.user;
+    }
+
+    if (!targetUserId) return null;
+
+    let notifDoc = await Notification.findOne({ user: targetUserId });
+    if (!notifDoc) {
+      notifDoc = await Notification.create({ user: targetUserId, expoTokens: [], notifications: [] });
+    }
+
+    // Avoid duplicate unread notification with identical title
+    const exists = notifDoc.notifications.some(
+      n => n.title === title && !n.seen && (new Date() - new Date(n.notifiedAt)) < 24 * 60 * 60 * 1000
+    );
+    if (!exists) {
+      notifDoc.notifications.push({ title, body, notifiedAt: new Date() });
+      await notifDoc.save();
+      for (const token of (notifDoc.expoTokens || [])) {
+        try {
+          await sendPushNotification(token, title, body);
+        } catch (_) {}
+      }
+    }
+    return true;
+  } catch (e) {
+    console.error("notifyDonorMilkMilestone error:", e);
+    return false;
+  }
+};

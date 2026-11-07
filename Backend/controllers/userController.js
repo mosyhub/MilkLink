@@ -74,6 +74,7 @@ exports.registerUser = catchAsyncErrors(async (req, res, next) => {
         password: userPassword,
         phone: userPhone.trim(),
         role: role || 'User',
+        accountStatus: (role && ['Staff', 'Admin', 'SuperAdmin'].includes(role)) ? 'Verified' : 'Temporary',
     };
 
     if (cleanEmail) {
@@ -218,12 +219,120 @@ exports.resetPassword = catchAsyncErrors(async (req, res, next) => {
 // Get current login user details => /api/v1/me
 exports.getUserProfile = catchAsyncErrors(async (req, res, next) => {
     const user = await User.findById(req.user.id);
+    if (!user) {
+        return next(new ErrorHandler('User not found', 404));
+    }
+
+    // Determine separate status dimensions:
+    // 1. Account status: Active (from User)
+    // 2. Donor registration status: None, Registered, In Screening, Completed
+    // 3. Donor eligibility status: None, Pending Review, For Laboratory Verification, For Medical Assessment, Eligible, Temporarily Deferred, Not Eligible
+    // 4. Milk request status: Has pending/active milk requests or none
+    const donor = await Donor.findOne({ user: user._id, isDeleted: false });
+    const Request = mongoose.models.Request || require('../models/request');
+    const latestMilkRequest = await Request.findOne({ requestedBy: user._id, isDeleted: false }).sort({ createdAt: -1 });
+
+    const donorRegistrationStatus = donor ? (donor.verified ? 'Completed' : 'Registered') : 'Unregistered';
+    const donorEligibilityStatus = donor ? donor.eligibility : 'Not Screened';
+    const milkRequestStatus = latestMilkRequest ? latestMilkRequest.status : 'None';
 
     res.status(200).json({
         success: true,
-        user
-    })
-})
+        user,
+        accountStatus: user.accountStatus || 'Temporary',
+        donorRegistrationStatus,
+        donorEligibilityStatus,
+        isDonorEligible: donor ? (donor.eligibility === 'Eligible') : false,
+        donorProfile: donor ? {
+            id: donor._id,
+            donorId: donor.donorId,
+            eligibility: donor.eligibility,
+            verified: donor.verified,
+            donorType: donor.donorType,
+            qrCodeData: donor.qrCodeData,
+        } : null,
+        milkRequestStatus,
+        hasActiveMilkRequest: latestMilkRequest ? ['Pending', 'Reserved'].includes(latestMilkRequest.status) : false,
+    });
+});
+
+// Link an existing staff-created donor record to currently logged-in user => /api/v1/user/link-donor
+exports.linkExistingDonorToAccount = catchAsyncErrors(async (req, res, next) => {
+    const { claimToken, qrData } = req.body;
+    const rawTokenInput = (claimToken || qrData || '').trim();
+
+    if (!rawTokenInput) {
+        return next(new ErrorHandler('Claim token or scannable QR data is required', 400));
+    }
+
+    let searchToken = rawTokenInput;
+    if (searchToken.startsWith('{') && searchToken.endsWith('}')) {
+        try {
+            const parsed = JSON.parse(searchToken);
+            if (parsed.token) searchToken = parsed.token;
+        } catch (_) {}
+    }
+
+    const tokenHash = crypto.createHash('sha256').update(searchToken).digest('hex');
+
+    // Find donor record
+    const donor = await Donor.findOne({
+        $or: [
+            { claimTokenHash: tokenHash },
+            { claimToken: searchToken },
+            { donorId: searchToken.toUpperCase() }
+        ],
+        isDeleted: false
+    }).select('+claimTokenHash +claimTokenExpires');
+
+    if (!donor) {
+        return next(new ErrorHandler('No matching staff-created donor record found with this token/ID', 404));
+    }
+
+    if (donor.user && donor.user.toString() !== req.user._id.toString()) {
+        return next(new ErrorHandler('This donor record has already been linked to another user account', 409));
+    }
+
+    // Check expiration if token has an expiration
+    if (donor.claimTokenExpires && donor.claimTokenExpires < new Date()) {
+        return next(new ErrorHandler('This claim token has expired. Please ask milk bank staff for a refreshed code.', 400));
+    }
+
+    // Check if current user already has a linked donor record
+    const existingLinkedDonor = await Donor.findOne({ user: req.user._id, isDeleted: false });
+    if (existingLinkedDonor && existingLinkedDonor._id.toString() !== donor._id.toString()) {
+        return next(new ErrorHandler(
+            `Your account is already linked to donor record ${existingLinkedDonor.donorId || existingLinkedDonor._id}. An account cannot be linked to conflicting donor records.`,
+            409
+        ));
+    }
+
+    // Link donor to current authenticated user
+    donor.user = req.user._id;
+    donor.claimToken = undefined;
+    donor.claimTokenHash = undefined;
+    donor.claimTokenExpires = undefined;
+    donor.qrCodeData = null;
+    if (donor.audit) {
+        donor.audit.updatedBy = req.user._id;
+    }
+    await donor.save();
+
+    // Update user account status to Verified
+    await User.findByIdAndUpdate(req.user._id, { accountStatus: 'Verified' });
+
+    res.status(200).json({
+        success: true,
+        message: `Donor record (${donor.donorId || 'Linked'}) successfully linked to your account.`,
+        donor: {
+            id: donor._id,
+            donorId: donor.donorId,
+            name: donor.name,
+            eligibility: donor.eligibility,
+            verified: donor.verified,
+        }
+    });
+});
 
 // Update / Change password => /api/v1/password/update
 exports.updatePassword = catchAsyncErrors(async (req, res, next) => {

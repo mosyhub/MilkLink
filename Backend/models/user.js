@@ -89,6 +89,12 @@ const userSchema = new mongoose.Schema({
         },
         default: 'User'
     },
+    accountStatus: {
+        type: String,
+        enum: ['Temporary', 'Verified', 'Suspended'],
+        default: 'Temporary',
+        index: true,
+    },
     createdAt: {
         type: Date,
         default: Date.now

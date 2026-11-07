@@ -16,6 +16,8 @@ import 'dialogs/request_form_dialog.dart';
 import '../profile/edit_profile_screen.dart';
 import '../../widgets/stacked_data_card.dart';
 import '../../widgets/user_avatar.dart';
+import 'staff_screening_appointments_screen.dart';
+import 'pending_registrations_screen.dart';
 
 /// Which section of the staff portal is currently open.
 /// null = the card-grid dashboard (home).
@@ -904,9 +906,24 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                 onTap: () => _openSection(StaffSection.requests),
               ),
               _buildDashboardCard(
+                icon: Icons.person_search,
+                label: 'Pending Online Registrations',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PendingRegistrationsScreen()),
+                  );
+                },
+              ),
+              _buildDashboardCard(
                 icon: Icons.calendar_month,
-                label: 'Schedules',
-                onTap: () => _showComingSoon('Schedules'),
+                label: 'Screening Clinic',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const StaffScreeningAppointmentsScreen()),
+                  );
+                },
               ),
               _buildDashboardCard(
                 icon: Icons.inventory_2_outlined,

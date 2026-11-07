@@ -18,7 +18,7 @@ const corsOptions = {
     origin: ['http://localhost:5173', 'http://localhost:5174', 'http://192.168.7.85', 'http://192.168.5.235:8081', 'http://192.168.5.234:8081', 'https://milklink-portal.vercel.app'], // Add your frontend's URL here
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-client-type'],
 };
 
 app.use(cors(corsOptions));
@@ -47,11 +47,17 @@ const bag = require('./routes/bag');
 const metrics = require('./routes/metrics');
 const announcement = require('./routes/announcement');
 const sign = require('./routes/signatories');
+const consent = require('./routes/consent');
+const pickup = require('./routes/pickup');
+const screening = require('./routes/screeningAppointment');
 // API routes
 app.use('/api/v1', user);
 app.use('/api/v1', event);
 app.use('/api/v1', patient);
 app.use('/api/v1', donor);
+app.use('/api/v1', consent);
+app.use('/api/v1', pickup);
+app.use('/api/v1', screening);
 app.use('/api/v1', fridge);
 app.use('/api/v1', inventory);
 app.use('/api/v1', request);

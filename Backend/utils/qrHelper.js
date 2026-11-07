@@ -1,5 +1,10 @@
 const crypto = require('crypto');
-const QRCode = require('qrcode');
+let QRCode;
+try {
+    QRCode = require('qrcode');
+} catch (_) {
+    QRCode = null;
+}
 
 // Generates a single-use claim token, its SHA-256 hash, and a black-and-white QR data URL
 async function generateClaimCredentials(profileType = 'Donor') {
@@ -20,11 +25,20 @@ async function generateClaimCredentials(profileType = 'Donor') {
         created: new Date().toISOString()
     });
 
-    const qrCodeData = await QRCode.toDataURL(payload, {
-        errorCorrectionLevel: 'M',
-        margin: 2,
-        color: { dark: '#000000', light: '#FFFFFF' }
-    });
+    let qrCodeData = null;
+    if (QRCode && typeof QRCode.toDataURL === 'function') {
+        try {
+            qrCodeData = await QRCode.toDataURL(payload, {
+                errorCorrectionLevel: 'M',
+                margin: 2,
+                color: { dark: '#000000', light: '#FFFFFF' }
+            });
+        } catch (_) {
+            qrCodeData = `data:text/plain;charset=utf-8,${encodeURIComponent(payload)}`;
+        }
+    } else {
+        qrCodeData = `data:text/plain;charset=utf-8,${encodeURIComponent(payload)}`;
+    }
 
     return { rawToken, tokenHash, expiresAt, qrCodeData };
 }

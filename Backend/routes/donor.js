@@ -15,14 +15,26 @@ const {
     generateDonorClaimToken,
     updateDonorScreeningStatus,
     getStaffDonorDashboard,
+    registerFirstTimeDonor,
+    searchReturningDonor,
+    recordReturningDonation,
+    getPendingOnlineRegistrations,
+    staffLinkUserToDonor,
+    staffCreateDonorForUser,
 } = require('../controllers/donorController');
 
 const { isAuthenticatedUser, authorizeRoles } = require('../middlewares/auth');
 
 // Public & shared routes
+router.post('/donor/register', registerFirstTimeDonor);
+router.get('/donor/search-returning', searchReturningDonor);
+router.post('/donor/:id/record-donation', isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin', 'Staff'), recordReturningDonation);
 router.get('/donor/me', isAuthenticatedUser, getMyDonorProfile);
 
 // Staff / Admin routes
+router.get('/staff/pending-registrations', isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin', 'Staff'), getPendingOnlineRegistrations);
+router.post('/staff/user/:userId/link-donor', isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin', 'Staff'), staffLinkUserToDonor);
+router.post('/staff/user/:userId/create-donor', isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin', 'Staff'), staffCreateDonorForUser);
 router.get('/donor/submissions', isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin', 'Staff'), getNewSubmissions);
 router.get('/donors/archived', isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin', 'Staff'), archivedDonors);
 router.get('/staff/donors/dashboard', isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin', 'Staff'), getStaffDonorDashboard);

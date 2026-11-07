@@ -545,3 +545,508 @@ exports.getStaffDonorDashboard = catchAsyncErrors(async (req, res, next) => {
         donors
     });
 });
+
+// Helper: Generate Sequential Pasig Human Milk Bank Donor ID (e.g. DEDE1-2026-0001)
+const generatePasigDonorId = async () => {
+    const year = new Date().getFullYear();
+    const prefix = `DEDE1-${year}-`;
+    const lastDonor = await Donor.findOne({ donorId: new RegExp(`^${prefix}`) })
+        .sort({ donorId: -1 })
+        .select('donorId');
+
+    let sequence = 1;
+    if (lastDonor && lastDonor.donorId) {
+        const parts = lastDonor.donorId.split('-');
+        const lastSeq = parseInt(parts[parts.length - 1], 10);
+        if (!isNaN(lastSeq)) {
+            sequence = lastSeq + 1;
+        }
+    }
+    return `${prefix}${String(sequence).padStart(4, '0')}`;
+};
+
+// First-Time Donor Registration (DEDE1 simplified workflow) => /api/v1/donor/register
+exports.registerFirstTimeDonor = catchAsyncErrors(async (req, res, next) => {
+    const {
+        firstName,
+        middleName,
+        lastName,
+        birthday,
+        street,
+        brgy,
+        city = "Pasig City",
+        contactNumber,
+        occupation,
+        donorType = "Community",
+        childName,
+        childBirthday,
+        birthWeight,
+        breastfeedingInfo,
+        questionnaireAnswers
+    } = req.body;
+
+    if (!firstName || !lastName) {
+        return next(new ErrorHandler("Please provide donor's first and last name", 400));
+    }
+    if (!birthday) {
+        return next(new ErrorHandler("Please enter birthday of the donor", 400));
+    }
+    if (!street || !brgy) {
+        return next(new ErrorHandler("Please provide complete address (street and barangay)", 400));
+    }
+    if (!contactNumber) {
+        return next(new ErrorHandler("Please provide a contact number", 400));
+    }
+
+    // Check duplicate donor record (same first name, last name, and birthday or contact number)
+    const normalizedFirst = firstName.trim().toLowerCase();
+    const normalizedLast = lastName.trim().toLowerCase();
+    const birthDate = new Date(birthday);
+
+    const existingDonor = await Donor.findOne({
+        isDeleted: false,
+        'name.first': { $regex: new RegExp(`^${normalizedFirst}$`, 'i') },
+        'name.last': { $regex: new RegExp(`^${normalizedLast}$`, 'i') },
+        $or: [
+            { birthday: birthDate },
+            { contact_number: contactNumber.trim() }
+        ]
+    });
+
+    if (existingDonor) {
+        return res.status(409).json({
+            success: false,
+            isDuplicate: true,
+            message: "A donor record already exists with this name and birthday/contact number.",
+            existingDonorId: existingDonor.donorId,
+            donor: {
+                id: existingDonor._id,
+                donorId: existingDonor.donorId,
+                name: existingDonor.name,
+                eligibility: existingDonor.eligibility
+            }
+        });
+    }
+
+    const newDonorId = await generatePasigDonorId();
+    const { rawToken, tokenHash, expiresAt, qrCodeData } = await generateClaimCredentials('Donor');
+
+    const childrenData = [];
+    if (childName && childBirthday) {
+        const cBirth = new Date(childBirthday);
+        const ageInMonths = Math.max(0, Math.floor((new Date() - cBirth) / (1000 * 60 * 60 * 24 * 30.4375)));
+        childrenData.push({
+            name: childName.trim(),
+            dateOfBirth: cBirth,
+            birth_weight: birthWeight || "",
+            age: {
+                value: ageInMonths || 1,
+                unit: "months"
+            }
+        });
+    }
+
+    const donorData = {
+        donorId: newDonorId,
+        user: req.user ? req.user._id : null,
+        staff: req.user && ['SuperAdmin', 'Admin', 'Staff'].includes(req.user.role) ? req.user._id : null,
+        name: {
+            first: firstName.trim(),
+            middle: (middleName && middleName.trim()) || "",
+            last: lastName.trim()
+        },
+        birthday: birthDate,
+        home_address: {
+            street: street.trim(),
+            brgy: brgy.trim(),
+            city: city.trim()
+        },
+        contact_number: contactNumber.trim(),
+        occupation: occupation ? occupation.trim() : "",
+        donorType,
+        eligibility: 'Pending Review',
+        claimToken: rawToken,
+        claimTokenHash: tokenHash,
+        claimTokenExpires: expiresAt,
+        qrCodeData,
+        children: childrenData,
+        audit: {
+            createdBy: req.user ? req.user._id : null,
+            updatedBy: req.user ? req.user._id : null
+        }
+    };
+
+    if (questionnaireAnswers && typeof questionnaireAnswers === 'object') {
+        donorData.screening = {
+            questionnaire: questionnaireAnswers,
+            reviewNotes: breastfeedingInfo ? `Breastfeeding notes: ${breastfeedingInfo}` : ''
+        };
+    }
+
+    const donor = await Donor.create(donorData);
+
+    res.status(201).json({
+        success: true,
+        message: "First-time donor registered successfully under Pasig City Human Milk Bank DEDE1 workflow.",
+        donorId: donor.donorId,
+        qrCodeData: donor.qrCodeData,
+        claimToken: rawToken,
+        donor,
+        nextSteps: [
+            "Complete your electronic consent and health questionnaire.",
+            "Upload laboratory screening documents (CBC, HIV, HBsAg, Anti-HCV).",
+            "Wait for medical assessment and eligibility confirmation by milk bank staff.",
+            "Schedule milk collection or home pickup once eligible."
+        ]
+    });
+});
+
+// Returning Donor Search & Identification (No login required) => /api/v1/donor/search-returning
+exports.searchReturningDonor = catchAsyncErrors(async (req, res, next) => {
+    const { query } = req.query;
+    if (!query || !query.trim()) {
+        return next(new ErrorHandler("Please provide donor ID, contact number, or donor name", 400));
+    }
+
+    const cleanQuery = query.trim();
+    const regex = new RegExp(cleanQuery, 'i');
+
+    const donors = await Donor.find({
+        isDeleted: false,
+        $or: [
+            { donorId: cleanQuery.toUpperCase() },
+            { contact_number: cleanQuery },
+            { 'name.first': regex },
+            { 'name.last': regex },
+            { submissionID: cleanQuery }
+        ]
+    })
+    .select('donorId name birthday contact_number home_address donorType eligibility verified donations user createdAt')
+    .limit(10);
+
+    res.status(200).json({
+        success: true,
+        count: donors.length,
+        donors
+    });
+});
+
+// Staff Record Donation for Returning Donor without Requiring Donor Login => /api/v1/donor/:id/record-donation
+exports.recordReturningDonation = catchAsyncErrors(async (req, res, next) => {
+    const { id } = req.params;
+    const {
+        donationType = "Public",
+        milkLettingEvent,
+        schedule,
+        totalVolume,
+        numberOfBags = 1,
+        collectionDate,
+        batchReference,
+        notes
+    } = req.body;
+
+    const donor = await Donor.findOne({
+        _id: id,
+        isDeleted: false
+    });
+
+    if (!donor) {
+        return next(new ErrorHandler(`Donor record not found with ID: ${id}`, 404));
+    }
+
+    // Check whether donor eligibility and reassessment remain valid
+    if (donor.eligibility !== 'Eligible') {
+        return next(new ErrorHandler(
+            `Cannot record donation. Donor eligibility status is "${donor.eligibility}". Authorized medical re-screening or status approval is required before accepting new milk.`,
+            400
+        ));
+    }
+
+    // Check if screening is older than 6 months (reassessment check)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    if (donor.screening?.reviewedAt && donor.screening.reviewedAt < sixMonthsAgo) {
+        donor.eligibility = 'For Medical Assessment';
+        donor.verified = false;
+        await donor.save();
+        return next(new ErrorHandler(
+            'Donor medical screening was conducted over 6 months ago. Re-assessment is required before collecting new milk.',
+            400
+        ));
+    }
+
+    if (!totalVolume || isNaN(totalVolume) || Number(totalVolume) <= 0) {
+        return next(new ErrorHandler("Please enter valid milk volume in milliliters", 400));
+    }
+
+    const newDonation = {
+        donationType,
+        totalVolume: Number(totalVolume),
+        numberOfBags: Number(numberOfBags) || 1,
+        collectionDate: collectionDate ? new Date(collectionDate) : new Date(),
+        batchReference: batchReference || `BATCH-${Date.now().toString().slice(-6)}`,
+        status: 'Collected',
+        recordedBy: req.user ? req.user._id : null,
+        notes: notes || ""
+    };
+
+    if (milkLettingEvent) newDonation.milkLettingEvent = milkLettingEvent;
+    if (schedule) newDonation.schedule = schedule;
+
+    donor.donations.push(newDonation);
+    if (donor.audit) {
+        donor.audit.updatedBy = req.user ? req.user._id : null;
+    }
+    await donor.save();
+
+    res.status(201).json({
+        success: true,
+        message: "New donation record saved successfully under donor profile.",
+        donorId: donor.donorId,
+        donation: newDonation,
+        totalDonationsCount: donor.donations.length
+    });
+});
+
+// ============================================================================
+// PENDING ONLINE REGISTRATIONS FOR STAFF MODULE
+// GET /api/v1/staff/pending-registrations
+// ============================================================================
+exports.getPendingOnlineRegistrations = catchAsyncErrors(async (req, res, next) => {
+    const { search, page = 1, pageSize = 20 } = req.query;
+    const ScreeningAppointment = require('../models/screeningAppointment');
+
+    const pageNum = Math.max(1, parseInt(page, 10));
+    const limitNum = Math.max(1, parseInt(pageSize, 10));
+    const skip = (pageNum - 1) * limitNum;
+
+    const userQuery = {
+        role: 'User',
+        isDeleted: false,
+    };
+
+    if (search && search.trim()) {
+        const regex = { $regex: search.trim(), $options: 'i' };
+        userQuery.$or = [
+            { 'name.first': regex },
+            { 'name.last': regex },
+            { username: regex },
+            { phone: regex },
+            { email: regex },
+        ];
+    }
+
+    const [users, total] = await Promise.all([
+        User.find(userQuery)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limitNum),
+        User.countDocuments(userQuery)
+    ]);
+
+    const userIds = users.map(u => u._id);
+
+    // Look up associated donors and screening appointments
+    const [linkedDonors, appointments] = await Promise.all([
+        Donor.find({ user: { $in: userIds }, isDeleted: false }),
+        ScreeningAppointment.find({ user: { $in: userIds }, isDeleted: false }).sort({ appointmentDate: -1 })
+    ]);
+
+    const donorByUser = {};
+    linkedDonors.forEach(d => {
+        if (d.user) donorByUser[d.user.toString()] = d;
+    });
+
+    const appointmentByUser = {};
+    appointments.forEach(a => {
+        const uId = a.user.toString();
+        if (!appointmentByUser[uId]) {
+            appointmentByUser[uId] = a; // latest appointment
+        }
+    });
+
+    const registrations = users.map(u => {
+        const d = donorByUser[u._id.toString()];
+        const apt = appointmentByUser[u._id.toString()];
+
+        return {
+            id: u._id,
+            name: u.name,
+            fullName: u.fullName || `${u.name?.first || ''} ${u.name?.last || ''}`.trim(),
+            username: u.username,
+            phone: u.phone,
+            email: u.email || 'N/A',
+            accountStatus: u.accountStatus || (d ? 'Verified' : 'Temporary'),
+            createdAt: u.createdAt,
+            screeningAppointment: apt ? {
+                id: apt._id,
+                appointmentId: apt.appointmentId,
+                date: apt.appointmentDate,
+                timeSlot: apt.timeSlot,
+                status: apt.status,
+                screeningCompleted: apt.screeningCompleted,
+            } : null,
+            linkedDonor: d ? {
+                id: d._id,
+                donorId: d.donorId,
+                donorType: d.donorType,
+                eligibility: d.eligibility,
+                verified: d.verified,
+                createdAt: d.createdAt,
+            } : null,
+            isLinkedToDonor: Boolean(d),
+        };
+    });
+
+    const pendingCount = registrations.filter(r => !r.isLinkedToDonor).length;
+    const verifiedCount = registrations.filter(r => r.isLinkedToDonor).length;
+
+    res.status(200).json({
+        success: true,
+        summary: {
+            total,
+            pendingCount,
+            verifiedCount,
+        },
+        page: pageNum,
+        pageSize: limitNum,
+        totalPages: Math.ceil(total / limitNum),
+        registrations,
+    });
+});
+
+// ============================================================================
+// STAFF: LINK TEMPORARY USER ACCOUNT TO AN EXISTING DONOR RECORD
+// POST /api/v1/staff/user/:userId/link-donor
+// ============================================================================
+exports.staffLinkUserToDonor = catchAsyncErrors(async (req, res, next) => {
+    const { userId } = req.params;
+    const { donorId } = req.body;
+
+    if (!donorId) {
+        return next(new ErrorHandler('Target donor ID is required', 400));
+    }
+
+    const user = await User.findById(userId);
+    if (!user || user.isDeleted) {
+        return next(new ErrorHandler('User not found', 404));
+    }
+
+    // Verify user doesn't already have a linked donor
+    const existingUserDonor = await Donor.findOne({ user: user._id, isDeleted: false });
+    if (existingUserDonor && existingUserDonor._id.toString() !== donorId) {
+        return next(new ErrorHandler(
+            `User is already linked to donor profile ${existingUserDonor.donorId || existingUserDonor._id}. Multiple donor profiles cannot be linked to the same user.`,
+            409
+        ));
+    }
+
+    const donor = await Donor.findById(donorId);
+    if (!donor || donor.isDeleted) {
+        return next(new ErrorHandler('Donor record not found', 404));
+    }
+
+    if (donor.user && donor.user.toString() !== user._id.toString()) {
+        return next(new ErrorHandler('This donor record has already been claimed by another user account.', 409));
+    }
+
+    donor.user = user._id;
+    donor.claimToken = undefined;
+    donor.claimTokenHash = undefined;
+    donor.claimTokenExpires = undefined;
+    donor.qrCodeData = null;
+    if (donor.audit) {
+        donor.audit.updatedBy = req.user._id;
+    }
+    await donor.save();
+
+    user.accountStatus = 'Verified';
+    await user.save();
+
+    res.status(200).json({
+        success: true,
+        message: `Successfully linked temporary account of ${user.fullName} to donor record ${donor.donorId || donor._id}.`,
+        donor: {
+            id: donor._id,
+            donorId: donor.donorId,
+            name: donor.name,
+            eligibility: donor.eligibility,
+            verified: donor.verified,
+        }
+    });
+});
+
+// ============================================================================
+// STAFF: CREATE NEW DONOR PROFILE FOR A VERIFIED TEMPORARY USER
+// POST /api/v1/staff/user/:userId/create-donor
+// ============================================================================
+exports.staffCreateDonorForUser = catchAsyncErrors(async (req, res, next) => {
+    const { userId } = req.params;
+    const {
+        birthday,
+        street,
+        brgy,
+        city = "Pasig City",
+        donorType = "Community",
+        occupation = "",
+        eligibility = "Pending Review",
+    } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user || user.isDeleted) {
+        return next(new ErrorHandler('User not found', 404));
+    }
+
+    // Check if user already has a linked donor record
+    const existingDonor = await Donor.findOne({ user: user._id, isDeleted: false });
+    if (existingDonor) {
+        return next(new ErrorHandler(
+            `User already has an active donor profile (${existingDonor.donorId || existingDonor._id}). Cannot create duplicate profiles.`,
+            409
+        ));
+    }
+
+    if (!birthday) {
+        return next(new ErrorHandler('Please provide donor date of birth', 400));
+    }
+    if (!street || !brgy) {
+        return next(new ErrorHandler('Please provide complete home address (street & barangay)', 400));
+    }
+
+    const newDonorId = await generatePasigDonorId();
+
+    const donor = await Donor.create({
+        donorId: newDonorId,
+        user: user._id,
+        staff: req.user._id,
+        name: {
+            first: user.name.first,
+            middle: user.name.middle || "",
+            last: user.name.last,
+        },
+        birthday: new Date(birthday),
+        home_address: {
+            street: street.trim(),
+            brgy: brgy.trim(),
+            city: city.trim(),
+        },
+        contact_number: user.phone,
+        donorType,
+        occupation: occupation.trim(),
+        eligibility,
+        verified: eligibility === 'Eligible',
+        audit: {
+            createdBy: req.user._id,
+            updatedBy: req.user._id,
+        }
+    });
+
+    user.accountStatus = 'Verified';
+    await user.save();
+
+    res.status(201).json({
+        success: true,
+        message: `Donor profile ${donor.donorId} created and linked to ${user.fullName}.`,
+        donor,
+    });
+});
