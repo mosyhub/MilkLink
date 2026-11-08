@@ -176,7 +176,7 @@ class _MilkPickupScheduleScreenState extends State<MilkPickupScheduleScreen> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: _selectedBarangay,
+              initialValue: _selectedBarangay,
               decoration: const InputDecoration(labelText: 'Barangay in Pasig *'),
               items: _pasigBarangays.map((b) => DropdownMenuItem(value: b, child: Text(b))).toList(),
               onChanged: (val) {
@@ -215,7 +215,7 @@ class _MilkPickupScheduleScreenState extends State<MilkPickupScheduleScreen> {
             ),
             const Divider(),
             DropdownButtonFormField<String>(
-              value: _selectedTimeSlot,
+              initialValue: _selectedTimeSlot,
               decoration: const InputDecoration(labelText: 'Preferred Time Slot'),
               items: const [
                 DropdownMenuItem(

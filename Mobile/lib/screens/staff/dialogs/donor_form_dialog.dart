@@ -286,7 +286,7 @@ class _DonorFormDialogState extends State<DonorFormDialog> {
                                 TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                         const SizedBox(height: 6),
                         DropdownButtonFormField<String>(
-                          value: _donorType,
+                          initialValue: _donorType,
                           decoration: InputDecoration(
                             contentPadding:
                                 const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -384,7 +384,7 @@ class _DonorFormDialogState extends State<DonorFormDialog> {
                                 TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                         const SizedBox(height: 6),
                         DropdownButtonFormField<String>(
-                          value: _eligibility,
+                          initialValue: _eligibility,
                           decoration: InputDecoration(
                             contentPadding:
                                 const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

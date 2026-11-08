@@ -259,9 +259,9 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
                         // ── Search & Autocomplete Header ───────────────────
                         Container(
                           decoration: BoxDecoration(
-                            color: AppColors.softBlue.withOpacity(0.45),
+                            color: AppColors.softBlue.withValues(alpha: 0.45),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.primaryBlue.withOpacity(0.35)),
+                            border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.35)),
                           ),
                           padding: const EdgeInsets.all(12),
                           child: Column(
@@ -313,7 +313,7 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: AppColors.success.withOpacity(0.12),
+                                    color: AppColors.success.withValues(alpha: 0.12),
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(color: AppColors.success, width: 0.8),
                                   ),
@@ -360,12 +360,12 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
                                     borderRadius: BorderRadius.circular(10),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.08),
+                                        color: Colors.black.withValues(alpha: 0.08),
                                         blurRadius: 8,
                                         offset: const Offset(0, 2),
                                       ),
                                     ],
-                                    border: Border.all(color: AppColors.primaryBlue.withOpacity(0.4)),
+                                    border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.4)),
                                   ),
                                   child: ListView.separated(
                                     shrinkWrap: true,
@@ -437,7 +437,7 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
                         const Text('Patient Type *', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                         const SizedBox(height: 6),
                         DropdownButtonFormField<String>(
-                          value: _patientType,
+                          initialValue: _patientType,
                           decoration: InputDecoration(
                             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),

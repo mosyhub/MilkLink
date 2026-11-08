@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../models/patient_model.dart';
 import '../../../models/request_model.dart';
@@ -160,7 +159,7 @@ class _RequestFormDialogState extends State<RequestFormDialog> {
                         const SizedBox(height: 6),
                         if (widget.availablePatients.isNotEmpty)
                           DropdownButtonFormField<String>(
-                            value: _selectedPatientId,
+                            initialValue: _selectedPatientId,
                             decoration: InputDecoration(
                               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
@@ -192,7 +191,7 @@ class _RequestFormDialogState extends State<RequestFormDialog> {
                         const Text('Patient Type *', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                         const SizedBox(height: 6),
                         DropdownButtonFormField<String>(
-                          value: _patientType,
+                          initialValue: _patientType,
                           decoration: InputDecoration(
                             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
@@ -268,7 +267,7 @@ class _RequestFormDialogState extends State<RequestFormDialog> {
                         const Text('Request Status *', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                         const SizedBox(height: 6),
                         DropdownButtonFormField<String>(
-                          value: _status,
+                          initialValue: _status,
                           decoration: InputDecoration(
                             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),

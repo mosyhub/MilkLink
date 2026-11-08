@@ -98,12 +98,12 @@ class _StackedDataCardState extends State<StackedDataCard> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: widget.isArchived ? AppColors.warning.withOpacity(0.4) : AppColors.border,
+          color: widget.isArchived ? AppColors.warning.withValues(alpha: 0.4) : AppColors.border,
           width: widget.isArchived ? 1.5 : 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

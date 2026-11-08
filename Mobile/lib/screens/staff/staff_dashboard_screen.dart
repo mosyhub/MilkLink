@@ -111,15 +111,6 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
     });
   }
 
-  /// Android back button: go from a section back to the dashboard first.
-  Future<bool> _onWillPop() async {
-    if (_section != null) {
-      _backToDashboard();
-      return false;
-    }
-    return true;
-  }
-
   // ───────────────────────────────────────────────────────────────────────────
   // PROFILE / SIGN OUT / NOTIFICATIONS
   // ───────────────────────────────────────────────────────────────────────────
@@ -210,7 +201,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: isClaimed ? AppColors.success.withOpacity(0.12) : AppColors.warning.withOpacity(0.15),
+        color: isClaimed ? AppColors.success.withValues(alpha: 0.12) : AppColors.warning.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: isClaimed ? AppColors.success : AppColors.warning,
@@ -283,7 +274,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.primaryBlue.withOpacity(0.4)),
+                    border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.4)),
                   ),
                   child: Image.memory(
                     qrImageBytes,
@@ -299,7 +290,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.softBlue,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.primaryBlue.withOpacity(0.4)),
+                    border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.4)),
                   ),
                   child: Center(
                     child: Column(
@@ -411,7 +402,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
               const Text('Screening Status *', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
               const SizedBox(height: 6),
               DropdownButtonFormField<String>(
-                value: allowedStatuses.contains(selectedStatus) ? selectedStatus : 'Pending Review',
+                initialValue: allowedStatuses.contains(selectedStatus) ? selectedStatus : 'Pending Review',
                 decoration: InputDecoration(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
@@ -680,7 +671,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: AppColors.softBlue.withOpacity(0.5),
+                      color: AppColors.softBlue.withValues(alpha: 0.5),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.folder_open, size: 48, color: AppColors.primaryNavy),
@@ -841,7 +832,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.25),
+                    color: Colors.white.withValues(alpha: 0.25),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -978,11 +969,11 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
         Color badgeBg = AppColors.softBlue;
         Color badgeFg = AppColors.primaryNavy;
         if (donor.eligibility.toLowerCase() == 'eligible') {
-          badgeBg = AppColors.success.withOpacity(0.15);
+          badgeBg = AppColors.success.withValues(alpha: 0.15);
           badgeFg = AppColors.success;
         } else if (donor.eligibility.toLowerCase() == 'not eligible' ||
             donor.eligibility.toLowerCase() == 'ineligible') {
-          badgeBg = AppColors.error.withOpacity(0.15);
+          badgeBg = AppColors.error.withValues(alpha: 0.15);
           badgeFg = AppColors.error;
         }
 
@@ -1149,21 +1140,21 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
         switch (req.status.toLowerCase()) {
           case 'dispensed':
           case 'completed':
-            stBg = AppColors.success.withOpacity(0.15);
+            stBg = AppColors.success.withValues(alpha: 0.15);
             stFg = AppColors.success;
             break;
           case 'approved':
-            stBg = AppColors.primaryBlue.withOpacity(0.15);
+            stBg = AppColors.primaryBlue.withValues(alpha: 0.15);
             stFg = AppColors.primaryBlue;
             break;
           case 'declined':
           case 'rejected':
-            stBg = AppColors.error.withOpacity(0.15);
+            stBg = AppColors.error.withValues(alpha: 0.15);
             stFg = AppColors.error;
             break;
           case 'pending':
           default:
-            stBg = AppColors.warning.withOpacity(0.15);
+            stBg = AppColors.warning.withValues(alpha: 0.15);
             stFg = AppColors.warning;
             break;
         }
@@ -1235,7 +1226,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                 decoration: BoxDecoration(
-                  color: selected ? Colors.white.withOpacity(0.25) : AppColors.border,
+                  color: selected ? Colors.white.withValues(alpha: 0.25) : AppColors.border,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -1439,16 +1430,20 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
       );
     }
 
-    return WillPopScope(
-      onWillPop: _onWillPop,
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: _buildAppBar(),
-        body: _section == null
-            ? _buildDashboardHome(staffProvider)
-            : _buildSectionView(staffProvider),
-        floatingActionButton: fab,
-      ),
-    );
+    return PopScope(
+  canPop: _section == null,
+  onPopInvokedWithResult: (didPop, result) {
+    if (didPop) return;
+    setState(() => _section = null);
+  },
+  child: Scaffold(
+    backgroundColor: AppColors.background,
+    appBar: _buildAppBar(),
+    body: _section == null
+        ? _buildDashboardHome(staffProvider)
+        : _buildSectionView(staffProvider),
+    floatingActionButton: fab,
+  ),
+);
   }
 }

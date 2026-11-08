@@ -413,14 +413,14 @@ class _DonorScreeningScreenState extends State<DonorScreeningScreen> {
                     ChoiceChip(
                       label: const Text('Yes'),
                       selected: currentVal == 'Yes',
-                      selectedColor: AppColors.accentPink.withOpacity(0.15),
+                      selectedColor: AppColors.accentPink.withValues(alpha: 0.15),
                       onSelected: (_) => setState(() => _questionnaire[question] = 'Yes'),
                     ),
                     const SizedBox(width: 10),
                     ChoiceChip(
                       label: const Text('No'),
                       selected: currentVal == 'No',
-                      selectedColor: AppColors.primaryNavy.withOpacity(0.15),
+                      selectedColor: AppColors.primaryNavy.withValues(alpha: 0.15),
                       onSelected: (_) => setState(() => _questionnaire[question] = 'No'),
                     ),
                   ],

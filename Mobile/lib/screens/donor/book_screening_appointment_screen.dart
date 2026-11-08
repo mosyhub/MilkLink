@@ -216,7 +216,7 @@ class _BookScreeningAppointmentScreenState extends State<BookScreeningAppointmen
               decoration: BoxDecoration(
                 color: AppColors.softBlue,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3)),
+                border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
@@ -374,7 +374,7 @@ class _BookScreeningAppointmentScreenState extends State<BookScreeningAppointmen
                         color: !s.isAvailable
                             ? Colors.grey.shade100
                             : isSelected
-                                ? AppColors.accentPink.withOpacity(0.12)
+                                ? AppColors.accentPink.withValues(alpha: 0.12)
                                 : Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(

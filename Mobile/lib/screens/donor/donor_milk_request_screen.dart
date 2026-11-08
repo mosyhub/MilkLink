@@ -139,7 +139,7 @@ class _DonorMilkRequestScreenState extends State<DonorMilkRequestScreen> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _relation,
+              initialValue: _relation,
               decoration: const InputDecoration(labelText: 'Relationship to Infant'),
               items: const [
                 DropdownMenuItem(value: 'Mother / Guardian', child: Text('Mother / Guardian')),

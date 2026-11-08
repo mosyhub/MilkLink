@@ -4,7 +4,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 class OfflineSyncService {
   static const String _keyRegistrationDraft = 'milklink_offline_reg_draft';
   static const String _keyPickupDraft = 'milklink_offline_pickup_draft';
-  static const String _keyRequestDraft = 'milklink_offline_request_draft';
 
   // Save Registration Draft
   static Future<void> saveRegistrationDraft(Map<String, dynamic> data) async {

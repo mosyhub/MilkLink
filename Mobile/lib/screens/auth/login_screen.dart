@@ -6,6 +6,7 @@ import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../main_navigation_screen.dart';
 import '../staff/staff_dashboard_screen.dart';
+import '../admin/admin_dashboard_screen.dart';
 import 'claim_record_screen.dart';
 import 'forgot_password_screen.dart';
 import 'register_screen.dart';
@@ -43,7 +44,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (success) {
       final user = authProvider.user;
-      if (user != null && (user.isStaff || user.isAdmin)) {
+      if (user != null && user.isAdmin) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
+        );
+      } else if (user != null && user.isStaff) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const StaffDashboardScreen()),
@@ -208,7 +214,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     decoration: BoxDecoration(
                       color: AppColors.softBlue,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.primaryBlue.withOpacity(0.35)),
+                      border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.35)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

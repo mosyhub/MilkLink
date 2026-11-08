@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../providers/donor_provider.dart';
-import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import 'returning_donor_search_screen.dart';
 
@@ -315,7 +314,7 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: _donorType,
+                    initialValue: _donorType,
                     decoration: const InputDecoration(labelText: 'Donor Classification'),
                     items: const [
                       DropdownMenuItem(value: 'Community', child: Text('Community Donor')),

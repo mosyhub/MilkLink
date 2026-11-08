@@ -68,10 +68,10 @@ class NotificationsScreen extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: notif.seen ? Colors.white : AppColors.softPink.withOpacity(0.4),
+                          color: notif.seen ? Colors.white : AppColors.softPink.withValues(alpha: 0.4),
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color: notif.seen ? AppColors.border : AppColors.accentPink.withOpacity(0.3),
+                            color: notif.seen ? AppColors.border : AppColors.accentPink.withValues(alpha: 0.3),
                           ),
                         ),
                         child: Row(

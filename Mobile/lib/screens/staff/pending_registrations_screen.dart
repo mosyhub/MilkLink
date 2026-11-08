@@ -75,7 +75,7 @@ class _PendingRegistrationsScreenState extends State<PendingRegistrationsScreen>
                 else
                   DropdownButtonFormField<DonorModel>(
                     isExpanded: true,
-                    value: selectedDonor,
+                    initialValue: selectedDonor,
                     hint: const Text('Choose donor profile', style: TextStyle(fontSize: 13)),
                     decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8)),
                     items: donors.map((d) {
@@ -187,7 +187,7 @@ class _PendingRegistrationsScreenState extends State<PendingRegistrationsScreen>
                 const Text('Donor Category', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                 const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
-                  value: donorType,
+                  initialValue: donorType,
                   decoration: const InputDecoration(border: OutlineInputBorder()),
                   items: const [
                     DropdownMenuItem(value: 'Community', child: Text('Community')),
@@ -373,7 +373,7 @@ class _PendingRegistrationsScreenState extends State<PendingRegistrationsScreen>
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isLinked ? AppColors.success.withOpacity(0.4) : AppColors.border),
+        border: Border.all(color: isLinked ? AppColors.success.withValues(alpha: 0.4) : AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -388,7 +388,7 @@ class _PendingRegistrationsScreenState extends State<PendingRegistrationsScreen>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: isLinked ? AppColors.success.withOpacity(0.12) : AppColors.warning.withOpacity(0.12),
+                  color: isLinked ? AppColors.success.withValues(alpha: 0.12) : AppColors.warning.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(

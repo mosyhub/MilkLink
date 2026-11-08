@@ -1,7 +1,7 @@
 class ApiConstants {
   // ── Connection ─────────────────────────────────────────────────────────────
   // Change to '10.0.2.2' if using an Android Emulator, or your computer's local Wi-Fi IP for physical devices.
-  static const String _host = '192.168.100.8';
+  static const String _host = '10.0.2.2';
 
   // Keep in sync with PORT in Backend/config/.env
   static const int _port = 4000;
@@ -85,4 +85,11 @@ class ApiConstants {
   static String requestById(String id) => '$baseUrl/request/$id';
   static String softDeleteRequest(String id) => '$baseUrl/request/$id/soft-delete';
   static String restoreRequest(String id) => '$baseUrl/request/$id/restore';
+
+  // ── Admin Portal Endpoints ────────────────────────────────────────────────
+  static String get adminUsers => '$baseUrl/admin/users';
+  static String get inventories => '$baseUrl/inventories';
+  static String get pickups => '$baseUrl/staff/pickups';
+  static String get schedules => '$baseUrl/schedules';
+  static String get adminMetrics => '$baseUrl/metrics';
 }

@@ -8,6 +8,7 @@ import 'providers/events_provider.dart';
 import 'providers/articles_provider.dart';
 import 'providers/notifications_provider.dart';
 import 'providers/staff_provider.dart';
+import 'providers/admin/admin_provider.dart';
 import 'screens/splash_screen.dart';
 
 void main() async {
@@ -28,6 +29,7 @@ class MilkLinkApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ArticlesProvider()),
         ChangeNotifierProvider(create: (_) => NotificationsProvider()),
         ChangeNotifierProvider(create: (_) => StaffProvider()),
+        ChangeNotifierProvider(create: (_) => AdminProvider()),
       ],
       child: MaterialApp(
         title: 'MilkLink Mobile',

@@ -10,14 +10,11 @@ import '../../widgets/stat_card.dart';
 import '../../widgets/status_badge.dart';
 import '../../widgets/event_card.dart';
 import '../../widgets/article_card.dart';
-import '../donor/donor_screening_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../events/event_detail_screen.dart';
 import '../articles/article_detail_screen.dart';
 import '../staff/staff_dashboard_screen.dart';
-import '../donor/donor_registration_screen.dart';
 import '../donor/returning_donor_search_screen.dart';
-import '../donor/electronic_consent_screen.dart';
 import '../donor/milk_pickup_schedule_screen.dart';
 import '../donor/donor_milk_request_screen.dart';
 import '../donor/chatbot_screen.dart';
@@ -289,7 +286,7 @@ class HomeScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primaryNavy.withOpacity(0.25),
+            color: AppColors.primaryNavy.withValues(alpha: 0.25),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -304,7 +301,7 @@ class HomeScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(Icons.admin_panel_settings, color: Colors.white, size: 22),
@@ -371,10 +368,10 @@ class HomeScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isEligible ? AppColors.success.withOpacity(0.5) : AppColors.border),
+        border: Border.all(color: isEligible ? AppColors.success.withValues(alpha: 0.5) : AppColors.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -489,7 +486,7 @@ class HomeScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primaryNavy.withOpacity(0.25),
+            color: AppColors.primaryNavy.withValues(alpha: 0.25),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -503,7 +500,7 @@ class HomeScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(Icons.calendar_month, color: Colors.white, size: 24),
@@ -766,7 +763,7 @@ class HomeScreen extends StatelessWidget {
           border: Border.all(color: AppColors.border),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.02),
+              color: Colors.black.withValues(alpha: 0.02),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -777,7 +774,7 @@ class HomeScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color, size: 20),

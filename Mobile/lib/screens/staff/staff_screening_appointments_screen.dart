@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
-import '../../models/screening_appointment_model.dart';
 
 class StaffScreeningAppointmentsScreen extends StatefulWidget {
   const StaffScreeningAppointmentsScreen({Key? key}) : super(key: key);
@@ -130,7 +129,7 @@ class _StaffScreeningAppointmentsScreenState extends State<StaffScreeningAppoint
                 const Text('Medical Eligibility Decision:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
-                  value: selectedEligibility,
+                  initialValue: selectedEligibility,
                   decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
                   items: const [
                     DropdownMenuItem(value: 'Eligible', child: Text('Eligible (Approved for donation)')),
@@ -287,7 +286,7 @@ class _StaffScreeningAppointmentsScreenState extends State<StaffScreeningAppoint
       child: FilterChip(
         selected: isSelected,
         label: Text(count != null ? '$label ($count)' : label),
-        selectedColor: AppColors.accentPink.withOpacity(0.2),
+        selectedColor: AppColors.accentPink.withValues(alpha: 0.2),
         checkmarkColor: AppColors.accentPink,
         labelStyle: TextStyle(
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -339,7 +338,7 @@ class _StaffScreeningAppointmentsScreenState extends State<StaffScreeningAppoint
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(color: badgeColor.withOpacity(0.12), borderRadius: BorderRadius.circular(6)),
+                decoration: BoxDecoration(color: badgeColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
                 child: Text(status, style: TextStyle(color: badgeColor, fontSize: 11, fontWeight: FontWeight.bold)),
               ),
             ],

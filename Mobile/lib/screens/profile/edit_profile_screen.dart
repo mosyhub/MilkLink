@@ -311,7 +311,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.primaryNavy.withOpacity(0.2), width: 2),
+                        border: Border.all(color: AppColors.primaryNavy.withValues(alpha: 0.2), width: 2),
                       ),
                       child: CircleAvatar(
                         radius: 46,
@@ -394,7 +394,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           decoration: BoxDecoration(
                             color: AppColors.softBlue,
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3)),
+                            border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.3)),
                           ),
                           child: Text(
                             user?.role.toUpperCase() ?? 'USER',
@@ -503,7 +503,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         ),
                         Switch(
                           value: _changePassword,
-                          activeColor: AppColors.primaryNavy,
+                          activeThumbColor: AppColors.primaryNavy,
                           onChanged: (val) => setState(() => _changePassword = val),
                         ),
                       ],
@@ -535,7 +535,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: AppColors.softBlue.withOpacity(0.4),
+                          color: AppColors.softBlue.withValues(alpha: 0.4),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Column(

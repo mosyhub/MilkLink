@@ -451,7 +451,7 @@ class _ClaimRecordScreenState extends State<ClaimRecordScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppColors.primaryNavy.withOpacity(0.8),
+                        color: AppColors.primaryNavy.withValues(alpha: 0.8),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Text(
@@ -567,7 +567,7 @@ class _ClaimRecordScreenState extends State<ClaimRecordScreen> {
           decoration: BoxDecoration(
             color: AppColors.softBlue,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.primaryBlue.withOpacity(0.35)),
+            border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.35)),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -696,7 +696,7 @@ class _ClaimRecordScreenState extends State<ClaimRecordScreen> {
             decoration: BoxDecoration(
               color: AppColors.successBg,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.success.withOpacity(0.4)),
+              border: Border.all(color: AppColors.success.withValues(alpha: 0.4)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -742,7 +742,7 @@ class _ClaimRecordScreenState extends State<ClaimRecordScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.success.withOpacity(0.5)),
+                      border: Border.all(color: AppColors.success.withValues(alpha: 0.5)),
                     ),
                     child: Text(
                       'Status: ${details['screeningStatus']}',

@@ -5,6 +5,7 @@ import '../providers/auth_provider.dart';
 import 'auth/login_screen.dart';
 import 'main_navigation_screen.dart';
 import 'staff/staff_dashboard_screen.dart';
+import 'admin/admin_dashboard_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -31,7 +32,12 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (authProvider.isAuthenticated) {
       final user = authProvider.user;
-      if (user != null && (user.isStaff || user.isAdmin)) {
+      if (user != null && user.isAdmin) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
+        );
+      } else if (user != null && user.isStaff) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const StaffDashboardScreen()),
@@ -104,4 +110,3 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 }
-
