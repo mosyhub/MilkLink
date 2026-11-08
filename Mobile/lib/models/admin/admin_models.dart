@@ -4,7 +4,7 @@ enum AdminModule {
   donors('Donor Records', Icons.favorite),
   recipients('Recipient Records', Icons.child_care),
   schedules('Schedules', Icons.calendar_month),
-  inventory('Inventory', Icons.inventory_2_outlined),
+  inventory('Milk Bank Inventory', Icons.inventory_2_outlined),
   accounts('Account Management', Icons.manage_accounts),
   content('Content Management', Icons.library_books),
   metrics('Metrics', Icons.bar_chart),

@@ -49,8 +49,8 @@ class ApiClient {
     } else if (response.statusCode == 404) {
       throw ApiException(body['message'] ?? 'Requested resource not found.', 404);
     } else {
-      final message = body is Map && body.containsKey('message')
-          ? body['message']
+      final message = body is Map
+          ? (body['message'] ?? body['error'] ?? 'Something went wrong (${response.statusCode})')
           : 'Something went wrong (${response.statusCode})';
       throw ApiException(message.toString(), response.statusCode);
     }

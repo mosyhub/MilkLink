@@ -89,7 +89,35 @@ class ApiConstants {
   // ── Admin Portal Endpoints ────────────────────────────────────────────────
   static String get adminUsers => '$baseUrl/admin/users';
   static String get inventories => '$baseUrl/inventories';
+  static String get pasteurize => '$baseUrl/inventories/pasteurize';
+  static String get fefoPreview => '$baseUrl/inventories/fefo-preview';
+  static String get fulfillRequest => '$baseUrl/inventories/fulfill-request';
+  static String inventoryById(String id) => '$baseUrl/inventory/$id';
+  static String softDeleteInventory(String id) => '$baseUrl/inventory/$id/soft-delete';
+  static String restoreInventory(String id) => '$baseUrl/inventory/$id/restore';
+
+  // ── Refrigerators ──────────────────────────────────────────────────────────
+  static String get fridges => '$baseUrl/fridges';
+  static String get archivedFridges => '$baseUrl/fridges/archived';
+  static String fridgeById(String id) => '$baseUrl/fridge/$id';
+  static String softDeleteFridge(String id) => '$baseUrl/fridge/$id/soft-delete';
+  static String restoreFridge(String id) => '$baseUrl/fridge/$id/restore';
+  static String fridgeEntries(String id, {bool isArchived = false, String? search}) =>
+      '$baseUrl/fridge/$id/entries?isArchived=$isArchived${search != null ? '&search=$search' : ''}';
+
+  // ── Collections ────────────────────────────────────────────────────────────
+  static String get collections => '$baseUrl/collections';
+  static String collectionById(String id) => '$baseUrl/collection/$id';
+  static String softDeleteCollection(String id) => '$baseUrl/collection/$id/soft-delete';
+  static String restoreCollection(String id) => '$baseUrl/collection/$id/restore';
+
   static String get pickups => '$baseUrl/staff/pickups';
   static String get schedules => '$baseUrl/schedules';
+  static String get archivedSchedules => '$baseUrl/schedules/archived';
+  static String scheduleById(String id) => '$baseUrl/schedule/$id';
+  static String softDeleteSchedule(String id) => '$baseUrl/schedule/$id/soft-delete';
+  static String restoreSchedule(String id) => '$baseUrl/schedule/$id/restore';
+  static String bookedSlots(String date, {String? excludeId}) =>
+      '$baseUrl/schedules/booked-slots?date=$date${excludeId != null ? '&excludeId=$excludeId' : ''}';
   static String get adminMetrics => '$baseUrl/metrics';
 }

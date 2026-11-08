@@ -14,6 +14,8 @@ import '../../widgets/admin/admin_summary_card.dart';
 import '../auth/login_screen.dart';
 import '../staff/dialogs/donor_form_dialog.dart';
 import '../staff/dialogs/patient_form_dialog.dart';
+import '../schedules/schedules_screen.dart';
+import '../inventory/inventory_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -463,6 +465,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     StaffProvider staffProvider,
     AdminModule module,
   ) {
+    if (module == AdminModule.schedules) {
+      return const SchedulesScreen();
+    }
+    if (module == AdminModule.inventory) {
+      return const InventoryScreen();
+    }
     if (module == AdminModule.donors || module == AdminModule.recipients) {
       return _buildStaffRecordsModule(staffProvider, module);
     }

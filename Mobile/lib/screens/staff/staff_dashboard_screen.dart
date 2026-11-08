@@ -18,6 +18,8 @@ import '../../widgets/stacked_data_card.dart';
 import '../../widgets/user_avatar.dart';
 import 'staff_screening_appointments_screen.dart';
 import 'pending_registrations_screen.dart';
+import '../schedules/schedules_screen.dart';
+import '../inventory/inventory_screen.dart';
 
 /// Which section of the staff portal is currently open.
 /// null = the card-grid dashboard (home).
@@ -701,7 +703,16 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      automaticallyImplyLeading: false,
+      automaticallyImplyLeading: _section != null,
+      leading: _section == null
+          ? Builder(
+              builder: (ctx) => IconButton(
+                icon: const Icon(Icons.menu, color: Colors.white),
+                tooltip: 'Navigation Menu',
+                onPressed: () => Scaffold.of(ctx).openDrawer(),
+              ),
+            )
+          : null,
       backgroundColor: AppColors.accentPink,
       foregroundColor: Colors.white,
       elevation: 0,
@@ -917,9 +928,24 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                 },
               ),
               _buildDashboardCard(
+                icon: Icons.event_note,
+                label: 'Schedules',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const SchedulesScreen(),
+                  ),
+                ),
+              ),
+              _buildDashboardCard(
                 icon: Icons.inventory_2_outlined,
-                label: 'Inventory',
-                onTap: () => _showComingSoon('Inventory'),
+                label: 'Milk Bank Inventory',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const InventoryScreen(),
+                  ),
+                ),
               ),
               _buildDashboardCard(
                 icon: Icons.bar_chart,
@@ -1179,6 +1205,13 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
             ),
             DataFieldItem(label: 'Request Date', value: _formatDate(req.date)),
             DataFieldItem(label: 'Requested By', value: req.requestedByName ?? 'MilkLink Staff'),
+            if (req.coveringBatches.isNotEmpty)
+              DataFieldItem(
+                label: 'Covering Batches',
+                value: req.coveringBatches
+                    .map((b) => 'Batch #${b.batchNumber ?? "—"} (${b.bottlesAllocated} x ${b.bottleType}ml)')
+                    .join('\n'),
+              ),
           ],
           onEdit: req.isDeleted ? null : () => _openRequestDialog(request: req),
           onArchive: req.isDeleted ? null : () => _archiveRequest(req),
@@ -1396,6 +1429,116 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
   // MAIN BUILD
   // ───────────────────────────────────────────────────────────────────────────
 
+  Widget _buildStaffDrawer() {
+    return Drawer(
+      child: SafeArea(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            const DrawerHeader(
+              decoration: BoxDecoration(color: AppColors.primaryNavy),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    'MilkLink Staff',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Pasig Human Milk Bank',
+                    style: TextStyle(color: Colors.white70, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.dashboard_outlined, color: AppColors.primaryBlue),
+              title: const Text('Dashboard'),
+              onTap: () {
+                Navigator.pop(context);
+                setState(() => _section = null);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.calendar_month, color: AppColors.primaryBlue),
+              title: const Text('Schedules'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SchedulesScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.inventory_2_outlined, color: AppColors.primaryBlue),
+              title: const Text('Milk Bank Inventory'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const InventoryScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.favorite_outline, color: AppColors.primaryBlue),
+              title: const Text('Donor Records'),
+              onTap: () {
+                Navigator.pop(context);
+                _openSection(StaffSection.donors);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.child_care, color: AppColors.primaryBlue),
+              title: const Text('Recipient Records'),
+              onTap: () {
+                Navigator.pop(context);
+                _openSection(StaffSection.recipients);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.assignment_outlined, color: AppColors.primaryBlue),
+              title: const Text('Milk Requests'),
+              onTap: () {
+                Navigator.pop(context);
+                _openSection(StaffSection.requests);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.person_search_outlined, color: AppColors.primaryBlue),
+              title: const Text('Pending Online Registrations'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const PendingRegistrationsScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.calendar_today_outlined, color: AppColors.primaryBlue),
+              title: const Text('Screening Clinic'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const StaffScreeningAppointmentsScreen()),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final staffProvider = Provider.of<StaffProvider>(context);
@@ -1439,6 +1582,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
   child: Scaffold(
     backgroundColor: AppColors.background,
     appBar: _buildAppBar(),
+    drawer: _buildStaffDrawer(),
     body: _section == null
         ? _buildDashboardHome(staffProvider)
         : _buildSectionView(staffProvider),

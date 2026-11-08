@@ -1,3 +1,29 @@
+class CoveringBatch {
+  final String? batchNumber;
+  final String? poolNumber;
+  final int bottleType;
+  final int bottlesAllocated;
+  final int volDischarge;
+
+  CoveringBatch({
+    this.batchNumber,
+    this.poolNumber,
+    this.bottleType = 0,
+    this.bottlesAllocated = 0,
+    this.volDischarge = 0,
+  });
+
+  factory CoveringBatch.fromJson(Map<String, dynamic> json) {
+    return CoveringBatch(
+      batchNumber: json['batch']?.toString(),
+      poolNumber: json['pool']?.toString(),
+      bottleType: (json['bottleType'] as num?)?.toInt() ?? 0,
+      bottlesAllocated: (json['bottlesAllocated'] as num?)?.toInt() ?? 0,
+      volDischarge: (json['volDischarge'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
 class RequestModel {
   final String id;
   final String patientId;
@@ -17,6 +43,7 @@ class RequestModel {
   final bool isDeleted;
   final DateTime? deletedAt;
   final DateTime? createdAt;
+  final List<CoveringBatch> coveringBatches;
 
   RequestModel({
     required this.id,
@@ -37,6 +64,7 @@ class RequestModel {
     this.isDeleted = false,
     this.deletedAt,
     this.createdAt,
+    this.coveringBatches = const [],
   });
 
   String get location => department?.isNotEmpty == true ? department! : hospital;
@@ -75,6 +103,15 @@ class RequestModel {
       dys = vr['days'] != null ? (vr['days'] as num).toInt() : 1;
     }
 
+    final List<CoveringBatch> batches = [];
+    if (json['milklink'] is Map && json['milklink']['ebm'] is List) {
+      for (final b in json['milklink']['ebm']) {
+        if (b is Map) {
+          batches.add(CoveringBatch.fromJson(Map<String, dynamic>.from(b)));
+        }
+      }
+    }
+
     return RequestModel(
       id: json['_id'] ?? '',
       patientId: pId,
@@ -94,6 +131,7 @@ class RequestModel {
       isDeleted: json['isDeleted'] == true,
       deletedAt: json['deletedAt'] != null ? DateTime.tryParse(json['deletedAt']) : null,
       createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt']) : null,
+      coveringBatches: batches,
     );
   }
 
