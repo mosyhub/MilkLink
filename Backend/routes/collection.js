@@ -6,6 +6,8 @@ const {
     createCollection,
     getCollectionDetails,
     updateCollection,
+    softDeleteCollection,
+    restoreCollection,
     deleteCollection,
     recordPublicDonation,
     recordPrivateDonation,
@@ -14,23 +16,31 @@ const {
 
 const { isAuthenticatedUser, authorizeRoles } = require('../middlewares/auth');
 
-// Super Admin Routes
+const allowedRoles = authorizeRoles('SuperAdmin', 'Admin', 'Staff');
+
 router.route('/collections')
-    .get(isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin'), getCollections)
+    .get(isAuthenticatedUser, allowedRoles, allCollections);
+
 router.route('/allCollections')
-    .get(isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin'), allCollections)
-//     .post(isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin'), createCollection);
+    .get(isAuthenticatedUser, allowedRoles, allCollections);
+
 router.route('/collection/:id')
-    .get(isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin'), getCollectionDetails)
-//     .put(isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin'), updateCollection)
-//     .delete(isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin'), deleteCollection);
+    .get(isAuthenticatedUser, allowedRoles, getCollectionDetails)
+    .put(isAuthenticatedUser, allowedRoles, updateCollection)
+    .delete(isAuthenticatedUser, allowedRoles, deleteCollection);
+
+router.route('/collection/:id/soft-delete')
+    .put(isAuthenticatedUser, allowedRoles, softDeleteCollection);
+
+router.route('/collection/:id/restore')
+    .put(isAuthenticatedUser, allowedRoles, restoreCollection);
 
 // Route for recording Public Donation (Milk Letting)
 router.route('/record-public')
-    .post(isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin'), recordPublicDonation)
+    .post(isAuthenticatedUser, allowedRoles, recordPublicDonation);
 
 // Route for recording Private Donation (Scheduled Pickup)
 router.route('/record-private')
-    .post(isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin'), recordPrivateDonation)
+    .post(isAuthenticatedUser, allowedRoles, recordPrivateDonation);
 
 module.exports = router;

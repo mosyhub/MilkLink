@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Letting = require('../models/letting');
+
 const {
     allInventories,
     createInventory,
@@ -11,25 +11,52 @@ const {
     reserveInventoryForRequest,
     returnBagsFromFridge,
     updateAllInventoriesStatus,
+    pasteurize,
+    getFefoPreview,
+    fulfillRequest,
+    updateInventoryEntry,
+    deleteInventoryEntry,
+    softDeleteInventory,
+    restoreInventory,
 } = require('../controllers/inventoryController');
 
 const { isAuthenticatedUser, authorizeRoles } = require('../middlewares/auth');
 
-// Super Admin Routes
+const allowedRoles = authorizeRoles('SuperAdmin', 'Admin', 'Staff');
+
 router.route('/inventories')
-    .get(isAuthenticatedUser, allInventories)
-    .post(isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin'), createInventory);
+    .get(isAuthenticatedUser, allowedRoles, allInventories)
+    .post(isAuthenticatedUser, allowedRoles, createInventory);
+
+// Pasteurization endpoint
+router.route('/inventories/pasteurize')
+    .post(isAuthenticatedUser, allowedRoles, pasteurize);
+
+// FEFO Preview and Fulfill Request
+router.route('/inventories/fefo-preview')
+    .get(isAuthenticatedUser, allowedRoles, getFefoPreview);
+
+router.route('/inventories/fulfill-request')
+    .post(isAuthenticatedUser, allowedRoles, fulfillRequest);
+
 router.route('/inventory/:id')
-    .get(isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin'), getInventoryDetails)
-    .put(isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin'), updateInventory)
-    .delete(isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin'), deleteInventory);
+    .get(isAuthenticatedUser, allowedRoles, getInventoryDetails)
+    .put(isAuthenticatedUser, allowedRoles, updateInventoryEntry)
+    .delete(isAuthenticatedUser, allowedRoles, deleteInventoryEntry);
+
+router.route('/inventory/:id/soft-delete')
+    .put(isAuthenticatedUser, allowedRoles, softDeleteInventory);
+
+router.route('/inventory/:id/restore')
+    .put(isAuthenticatedUser, allowedRoles, restoreInventory);
 
 router.route('/inventory-status/:id')
-    .put(isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin'), updateInventoryStatus)
+    .put(isAuthenticatedUser, allowedRoles, updateInventoryStatus);
 
-router.route('/check-inventories').put(updateAllInventoriesStatus)
+router.route('/check-inventories')
+    .put(updateAllInventoriesStatus);
 
 router.route('/reserved-bottle/:id')
-    .put(isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin'), reserveInventoryForRequest)
+    .put(isAuthenticatedUser, allowedRoles, reserveInventoryForRequest);
 
 module.exports = router;

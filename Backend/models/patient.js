@@ -65,56 +65,6 @@ const patientSchema = new mongoose.Schema({
             ref: 'Request',
         },
     ],
-    // Structured Patient Intake Questionnaire
-    intakeQuestionnaire: {
-        patientDetails: {
-            birthWeightGrams: { type: Number },
-            currentWeightGrams: { type: Number },
-            gestationalAgeWeeks: { type: Number },
-            clinicalDiagnosis: { type: String, default: '' },
-            attendingPhysician: { type: String, default: '' },
-            hospitalOrWard: { type: String, default: 'NICU' },
-        },
-        motherInfo: {
-            motherAge: { type: Number },
-            gravida: { type: Number },
-            para: { type: Number },
-            obstetricHistory: { type: String, default: '' },
-            maternalMedicalHistory: { type: String, default: '' },
-        },
-        feedingHistory: {
-            feedingMethod: {
-                type: String,
-                enum: ['OGT/NGT', 'Cup Feeding', 'Bottle Feeding', 'Direct Breastfeeding', 'NPO', 'Other'],
-                default: 'OGT/NGT',
-            },
-            lactationDifficulties: { type: String, default: 'Insufficient milk supply / maternal separation' },
-            currentMilkTolerance: { type: String, default: 'Tolerating well' },
-            dailyCaloricRequirement: { type: String, default: '' },
-        },
-        medicalInfo: {
-            isPremature: { type: Boolean, default: false },
-            isLowBirthWeight: { type: Boolean, default: false },
-            hasNecrotizingEnterocolitisRisk: { type: Boolean, default: false },
-            knownAllergies: [{ type: String }],
-            clinicalContraindications: [{ type: String }],
-        },
-        milkRequestNeeds: {
-            initialVolumeRequestedMl: { type: Number, default: 0 },
-            estimatedDaysNeeded: { type: Number, default: 3 },
-            urgencyLevel: {
-                type: String,
-                enum: ['Routine', 'Urgent', 'Critical / Emergency'],
-                default: 'Routine',
-            },
-            priorityTier: {
-                type: String,
-                enum: ['Tier 1 (VLBW / Premature / NICU)', 'Tier 2 (Surgical / Pathological)', 'Tier 3 (Maternal Illness / Absence)', 'Tier 4 (Temporary Supplementation)'],
-                default: 'Tier 1 (VLBW / Premature / NICU)',
-            },
-        },
-    },
-    // Flow B: Single-use Claim Token & QR Code Footprint
     claimToken: {
         type: String,
         select: false,

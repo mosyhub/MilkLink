@@ -2,13 +2,13 @@ const mongoose = require('mongoose');
 const { ObjectId } = mongoose.Schema.Types;
 
 const notificationSchema = new mongoose.Schema({
-    user: { 
-        type: ObjectId, 
-        ref: 'User', 
+    user: {
+        type: ObjectId,
+        ref: 'User',
         required: true,
         unique: true
     },
-    expoTokens: [
+    tokens: [
         {
             type: String,
             required: true

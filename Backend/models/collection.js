@@ -32,6 +32,14 @@ const collectionSchema = new mongoose.Schema({
         type: ObjectId,
         ref: 'Schedule'
     },
+    volume: {
+        type: Number,
+        default: 0
+    },
+    reasonForCorrection: {
+        type: String,
+        default: ''
+    },
     notes: {
         type: String 
     }

@@ -189,7 +189,7 @@ exports.getCollectionDetails = catchAsyncErrors(async (req, res, next) => {
     })
     .populate({
       path: "privDetails",
-      select: "totalVolume donorDetails.bags",
+      select: "totalVolume dateRange dates startDate endDate startTime endTime time donorName pickupAddress address contactNumber donorDetails.bags",
       populate: {
         path: "donorDetails.bags",
         select: "expressDate volume",
@@ -210,7 +210,30 @@ exports.getCollectionDetails = catchAsyncErrors(async (req, res, next) => {
 
 // Get All Collection => /api/v1/collections
 exports.allCollections = catchAsyncErrors(async (req, res, next) => {
-  const collections = await Collection.find()
+  const { isArchived, status, search, startDate, endDate } = req.query;
+
+  const query = {};
+  if (isArchived === 'true') {
+    // Handled below via findOnlyDeleted
+  } else {
+    query.isDeleted = false;
+  }
+  if (status) {
+    query.status = status;
+  }
+  if (startDate && endDate) {
+    query.collectionDate = {
+      $gte: new Date(startDate),
+      $lte: new Date(endDate)
+    };
+  }
+
+  let collectionsQuery = isArchived === 'true'
+    ? Collection.findOnlyDeleted(query)
+    : Collection.find(query);
+
+  const rawCollections = await collectionsQuery
+    .sort({ collectionDate: -1 })
     .populate({
       path: "pubDetails",
       select: "totalVolume attendance.bags",
@@ -221,7 +244,7 @@ exports.allCollections = catchAsyncErrors(async (req, res, next) => {
     })
     .populate({
       path: "privDetails",
-      select: "totalVolume donorDetails.donorId donorDetails.bags",
+      select: "totalVolume dateRange dates startDate endDate startTime endTime time donorName pickupAddress address contactNumber donorDetails.donorId donorDetails.bags",
       populate: [
         {
           path: "donorDetails.donorId",
@@ -238,12 +261,123 @@ exports.allCollections = catchAsyncErrors(async (req, res, next) => {
       ],
     });
 
-  const count = await Collection.countDocuments();
+  let collections = rawCollections;
+  if (search) {
+    const q = search.toLowerCase();
+    collections = rawCollections.filter(c => {
+      const donorName = c.privDetails?.donorName || c.privDetails?.donorDetails?.donorId?.user?.name || '';
+      return donorName.toLowerCase().includes(q);
+    });
+  }
 
   res.status(200).json({
     success: true,
-    count,
+    count: collections.length,
     collections,
+  });
+});
+
+// Update Collection => /api/v1/collection/:id
+exports.updateCollection = catchAsyncErrors(async (req, res, next) => {
+  const { collectionDate, status, volume, reasonForCorrection } = req.body;
+  const collection = await Collection.findById(req.params.id);
+  if (!collection) {
+    return next(new ErrorHandler("Collection record not found", 404));
+  }
+
+  const beforeVol = collection.volume || 0;
+  if (collectionDate) collection.collectionDate = new Date(collectionDate);
+  if (status) collection.status = status;
+  if (volume !== undefined) collection.volume = Math.round(Number(volume));
+  if (reasonForCorrection) collection.reasonForCorrection = reasonForCorrection.trim();
+
+  await collection.save();
+
+  // If volume was corrected, update corresponding inventory entry
+  if (volume !== undefined && collection.privDetails) {
+    const inv = await Inventory.findOne({ "unpasteurizedDetails.collectionId": collection._id });
+    if (inv) {
+      const invBefore = inv.volume;
+      inv.volume = Math.round(Number(volume));
+      inv.reasonForChange = reasonForCorrection || 'Volume corrected in Collections';
+      await inv.save();
+
+      await AuditLog.create({
+        action: 'UPDATE_COLLECTION',
+        user: req.user?._id,
+        userName: req.user?.name ? `${req.user.name.first} ${req.user.name.last}` : 'Staff / Admin',
+        targetType: 'Collection',
+        targetId: collection._id,
+        beforeVolume: invBefore,
+        afterVolume: inv.volume,
+        volumeChanged: inv.volume - invBefore,
+        reason: reasonForCorrection || 'Volume correction'
+      });
+    }
+  }
+
+  res.status(200).json({
+    success: true,
+    collection,
+  });
+});
+
+// Soft Delete (Archive) Collection => /api/v1/collection/:id/soft-delete
+exports.softDeleteCollection = catchAsyncErrors(async (req, res, next) => {
+  const collection = await Collection.softDeleteById(req.params.id);
+  if (!collection) {
+    return next(new ErrorHandler("Collection record not found", 404));
+  }
+
+  await AuditLog.create({
+    action: 'ARCHIVE_COLLECTION',
+    user: req.user?._id,
+    userName: req.user?.name ? `${req.user.name.first} ${req.user.name.last}` : 'Staff / Admin',
+    targetType: 'Collection',
+    targetId: collection._id,
+    reason: 'Archived collection record (Milk remains in refrigerator)'
+  });
+
+  res.status(200).json({
+    success: true,
+    collection,
+  });
+});
+
+// Restore Collection => /api/v1/collection/:id/restore
+exports.restoreCollection = catchAsyncErrors(async (req, res, next) => {
+  const collection = await Collection.restoreById(req.params.id);
+  if (!collection) {
+    return next(new ErrorHandler("Archived collection record not found", 404));
+  }
+
+  await AuditLog.create({
+    action: 'RESTORE_COLLECTION',
+    user: req.user?._id,
+    userName: req.user?.name ? `${req.user.name.first} ${req.user.name.last}` : 'Staff / Admin',
+    targetType: 'Collection',
+    targetId: collection._id,
+    reason: 'Restored collection record'
+  });
+
+  res.status(200).json({
+    success: true,
+    collection,
+  });
+});
+
+// Delete Collection permanently => /api/v1/collection/:id
+exports.deleteCollection = catchAsyncErrors(async (req, res, next) => {
+  const collection = await Collection.findById(req.params.id);
+  if (!collection) {
+    return next(new ErrorHandler("Collection record not found", 404));
+  }
+
+  await collection.deleteOne();
+
+  res.status(200).json({
+    success: true,
+    message: "Collection record deleted permanently",
   });
 });
 

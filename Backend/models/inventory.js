@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const { ObjectId } = mongoose.Schema.Types;
-const softDeletePlugin = require('./plugins/softDelete')
+const softDeletePlugin = require('./plugins/softDelete');
+
 const inventorySchema = new mongoose.Schema({
   fridge: {
     type: ObjectId,
@@ -14,59 +15,100 @@ const inventorySchema = new mongoose.Schema({
   user: {
     type: ObjectId,
     ref: "User",
-    required: [true, "Admin is needed to complete inventory"],
   },
   status: {
     type: String,
-    enum: ["Unavailable", "Pending", "Available", "Reserved"],
+    enum: ["Unavailable", "Pending", "Available", "Reserved", "Depleted"],
     default: "Available",
     required: true,
   },
+  // Unified fields for simple entry & batch representation
+  donorName: {
+    type: String,
+    default: '',
+    trim: true,
+  },
+  donorNames: [
+    {
+      type: String,
+      trim: true,
+    }
+  ],
+  volume: {
+    type: Number,
+    default: 0, // integer in ml
+  },
+  expiration: {
+    type: Date,
+  },
+  batchNumber: {
+    type: Number,
+  },
+  poolNumber: {
+    type: Number,
+  },
+  bottleType: {
+    type: Number, // e.g. 100, 200 ml
+  },
+  availableBottles: {
+    type: Number,
+    default: 0,
+  },
+  isPasteurized: {
+    type: Boolean,
+    default: false,
+  },
+  isRequested: {
+    type: Boolean,
+    default: false,
+  },
+  sourceEntries: [
+    {
+      type: ObjectId,
+      ref: 'Inventory',
+    }
+  ],
+  reasonForChange: {
+    type: String,
+    default: '',
+  },
+
+  // Legacy & subdocument details for compatibility
   pasteurizedDetails: {
     pasteurizationDate: {
       type: Date,
-      required: function () { return this._fridgeType === "Pasteurized"; },
     },
     batch: {
       type: Number,
-      required: function () { return this._fridgeType === "Pasteurized"; },
     },
     pool: {
       type: Number,
-      required: function () { return this._fridgeType === "Pasteurized"; },
     },
     bottles: [
       {
         bottleNumber: {
           type: Number,
-          required: function () { return this._fridgeType === "Pasteurized"; },
         }, 
         status: {
           type: String,
           enum: ["Available", "Reserved", "Dispensed"],
           default: "Available",
-          required: function () { return this._fridgeType === "Pasteurized"; },
         },
       },
     ],
     bottleType: {
       type: Number,
-      enum: [100, 200],
-      required: function () { return this._fridgeType === "Pasteurized"; },
     },
     batchVolume: {
       type: Number,
-      required: function () { return this._fridgeType === "Pasteurized"; },
     },
     expiration: {
       type: Date,
-      required: function () { return this._fridgeType === "Pasteurized"; },
     },
     donors: [
       {
         type: ObjectId,
         ref: "Donor",
-        required: function () { return this._fridgeType === "Pasteurized"; },
       },
     ],
   },
@@ -74,36 +116,44 @@ const inventorySchema = new mongoose.Schema({
     collectionId: {
       type: ObjectId,
       ref: "Collection",
-      required: function () { return this._fridgeType === "Unpasteurized"; },
     },
     expressDateStart: {
       type: Date,
-      required: function () { return this._fridgeType === "Unpasteurized"; },
     },
     expressDateEnd: {
       type: Date,
-      required: function () { return this._fridgeType === "Unpasteurized"; },
     },
     expiration: {
       type: Date,
-      required: function () { return this._fridgeType === "Unpasteurized"; },
     },
   },
 });
 
-// Virtual to retrieve fridge type
-inventorySchema.virtual("_fridgeType").get(function () {
-  return this.fridge ? this.fridge.fridgeType : null;
+// Sync top-level fields with nested details before saving
+inventorySchema.pre("save", function () {
+  if (this.unpasteurizedDetails) {
+    if (!this.expiration && this.unpasteurizedDetails.expiration) {
+      this.expiration = this.unpasteurizedDetails.expiration;
+    }
+  }
+  if (this.pasteurizedDetails) {
+    if (!this.expiration && this.pasteurizedDetails.expiration) {
+      this.expiration = this.pasteurizedDetails.expiration;
+    }
+    if (!this.batchNumber && this.pasteurizedDetails.batch) {
+      this.batchNumber = this.pasteurizedDetails.batch;
+    }
+    if (!this.poolNumber && this.pasteurizedDetails.pool) {
+      this.poolNumber = this.pasteurizedDetails.pool;
+    }
+    if (!this.bottleType && this.pasteurizedDetails.bottleType) {
+      this.bottleType = this.pasteurizedDetails.bottleType;
+    }
+    if (this.availableBottles === 0 && Array.isArray(this.pasteurizedDetails.bottles)) {
+      this.availableBottles = this.pasteurizedDetails.bottles.filter(b => b.status === 'Available').length;
+    }
+  }
 });
 
-// Middleware to fetch _fridgeType before validation
-inventorySchema.pre("validate", async function () {
-  if (!this.fridge) return;
-
-  const fridge = await mongoose.model("Fridge").findById(this.fridge);
-  if (!fridge) throw new Error("Fridge not found");
-
-  this._fridgeType = fridge.type; // Store fridge type in a temporary field
-});
-inventorySchema.plugin(softDeletePlugin)
+inventorySchema.plugin(softDeletePlugin);
 module.exports = mongoose.model("Inventory", inventorySchema);
