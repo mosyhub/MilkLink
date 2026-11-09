@@ -31,12 +31,17 @@ class ArticlesProvider extends ChangeNotifier {
 
   Future<void> fetchArticles() async {
     try {
-      final response = await ApiClient.get(ApiConstants.articles);
+      final response = await ApiClient.get(
+        ApiConstants.articles,
+        requiresAuth: false,
+      );
       if (response['success'] == true && response['articles'] is List) {
         final list = response['articles'] as List;
         _articles = list.map((a) => ArticleModel.fromJson(a)).toList();
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[ArticlesProvider] fetchArticles error: $e');
+    }
   }
 
   Future<void> fetchAnnouncements() async {
@@ -45,11 +50,15 @@ class ArticlesProvider extends ChangeNotifier {
         ApiConstants.announcements,
         requiresAuth: false,
       );
-      if (response['success'] == true && response['announcements'] is List) {
-        final list = response['announcements'] as List;
-        _announcements = list.map((a) => AnnouncementModel.fromJson(a)).toList();
+      if (response['success'] == true) {
+        final list = (response['announcements'] ?? response['articles']) as List?;
+        if (list != null) {
+          _announcements = list.map((a) => AnnouncementModel.fromJson(a)).toList();
+        }
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[ArticlesProvider] fetchAnnouncements error: $e');
+    }
   }
 }
 

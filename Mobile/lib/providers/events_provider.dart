@@ -34,9 +34,11 @@ class EventsProvider extends ChangeNotifier {
         _status = EventsStatus.loaded;
       }
     } on ApiException catch (e) {
+      debugPrint('[EventsProvider] ApiException: ${e.message}');
       _errorMessage = e.message;
       _status = EventsStatus.error;
     } catch (e) {
+      debugPrint('[EventsProvider] Error: $e');
       _errorMessage = 'Could not load upcoming milk letting events.';
       _status = EventsStatus.error;
     }

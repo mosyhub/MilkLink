@@ -155,7 +155,7 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
   Color _getStatusColor(String status) {
     switch (status) {
       case 'Stored':
-        return AppColors.info;
+        return AppColors.primaryBlue;
       case 'Collected':
         return AppColors.success;
       case 'Dispensed':
@@ -171,7 +171,7 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
     final statusColor = _getStatusColor(_collection.status);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
         title: const Text('Collection Details', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
@@ -312,11 +312,11 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: AppColors.background,
+                                    color: AppColors.surface,
                                     borderRadius: BorderRadius.circular(6),
                                     border: Border.all(color: AppColors.border),
                                   ),
-                                  child: const Text('Read-Only Here', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                                  child: const Text('Read-Only Here', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                                 ),
                               ],
                             ),

@@ -231,7 +231,7 @@ class MilkRequestModel {
       feedingDurationDays: days,
       approvedVolume: (json['approvedVolume'] as num?)?.toDouble(),
       reasonForRequest: json['reason']?.toString() ?? json['reasonForRequest']?.toString() ?? 'N/A',
-      hospitalOrAddress: json['hospital']?.toString() ?? 'Pasig-Pateros District Hospital',
+      hospitalOrAddress: json['hospital']?.toString() ?? 'Pasig City General Hospital',
       additionalRemarks: json['additionalRemarks']?.toString() ?? json['notes']?.toString(),
       doctor: json['doctor']?.toString(),
       status: json['status']?.toString() ?? 'Pending',

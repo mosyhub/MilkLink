@@ -8,7 +8,9 @@ import '../../models/dashboard_metrics_model.dart';
 import '../requests/milk_requests_screen.dart';
 
 class MetricsDashboardScreen extends StatefulWidget {
-  const MetricsDashboardScreen({super.key});
+  final VoidCallback? onBack;
+
+  const MetricsDashboardScreen({super.key, this.onBack});
 
   @override
   State<MetricsDashboardScreen> createState() => _MetricsDashboardScreenState();
@@ -168,6 +170,14 @@ class _MetricsDashboardScreenState extends State<MetricsDashboardScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Metrics Dashboard'),
+        leading: widget.onBack != null
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                tooltip: 'Back',
+                onPressed: widget.onBack,
+              )
+            : null,
+        automaticallyImplyLeading: widget.onBack == null,
         actions: [
           IconButton(
             icon: const Icon(Icons.tune),
@@ -365,7 +375,7 @@ class _MetricsDashboardScreenState extends State<MetricsDashboardScreen> {
           mainAxisSpacing: 10,
           children: [
             _metricCard('Milk Collected', '${NumberFormat('#,##0').format(s.totalMilkCollected)} mL', Icons.water_drop, AppColors.primaryBlue),
-            _metricCard('Milk Pasteurized', '${NumberFormat('#,##0').format(s.totalMilkPasteurized)} mL', Icons.science, AppColors.softPink),
+            _metricCard('Milk Pasteurized', '${NumberFormat('#,##0').format(s.totalMilkPasteurized)} mL', Icons.science, AppColors.softBlue),
             _metricCard('Milk Dispensed', '${NumberFormat('#,##0').format(s.totalMilkDispensed)} mL', Icons.local_hospital, AppColors.success),
             _metricCard('Volume Requested', '${NumberFormat('#,##0').format(s.totalVolumeRequested)} mL', Icons.assignment, Colors.purple),
             _metricCard('Pasteurized Stock', '${NumberFormat('#,##0').format(s.pasteurizedStock)} mL\n(${s.pasteurizedBottles} bottles)', Icons.kitchen, AppColors.primaryNavy),

@@ -82,7 +82,7 @@ class _FridgeFormScreenState extends State<FridgeFormScreen> {
     final title = _isEdit ? 'Edit Refrigerator' : 'New Refrigerator';
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,

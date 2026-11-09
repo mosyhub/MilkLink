@@ -42,7 +42,7 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
     );
     _reasonCtrl = TextEditingController(text: r?.reasonForRequest ?? '');
     _hospitalCtrl = TextEditingController(
-      text: r?.hospitalOrAddress ?? 'Pasig-Pateros District Hospital',
+      text: r?.hospitalOrAddress ?? 'Pasig City General Hospital',
     );
     _remarksCtrl = TextEditingController(text: r?.additionalRemarks ?? '');
     _relation = r?.relationToRecipient ?? 'Mother / Guardian';

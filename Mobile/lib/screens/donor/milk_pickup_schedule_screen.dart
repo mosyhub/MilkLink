@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/network/api_client.dart';
+import '../../widgets/app_widgets.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 
@@ -111,7 +112,7 @@ class _MilkPickupScheduleScreenState extends State<MilkPickupScheduleScreen> {
           builder: (_) => AlertDialog(
             title: const Row(
               children: [
-                Icon(Icons.local_shipping, color: AppColors.accentPink),
+                Icon(Icons.local_shipping, color: AppColors.primaryBlue),
                 SizedBox(width: 8),
                 Text('Pickup Confirmed'),
               ],
@@ -154,12 +155,8 @@ class _MilkPickupScheduleScreenState extends State<MilkPickupScheduleScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Schedule Milk Pickup'),
-        backgroundColor: Colors.white,
-        elevation: 0,
-      ),
+      backgroundColor: AppColors.pageBackground,
+      appBar: AppTopBar(title: 'Schedule Milk Pickup'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -202,7 +199,7 @@ class _MilkPickupScheduleScreenState extends State<MilkPickupScheduleScreen> {
                     ? 'Select Collection Date *'
                     : 'Date: ${DateFormat('EEE, MMMM dd, yyyy').format(_selectedDate!)}',
               ),
-              trailing: const Icon(Icons.calendar_today, color: AppColors.accentPink),
+              trailing: const Icon(Icons.calendar_today, color: AppColors.primaryBlue),
               onTap: () async {
                 final picked = await showDatePicker(
                   context: context,

@@ -27,7 +27,7 @@ class AdminProvider extends ChangeNotifier {
         _getList(ApiConstants.schedules, const ['schedules', 'data']),
         _getList(ApiConstants.adminUsers, const ['users', 'staff']),
         _getList(ApiConstants.articles, const ['articles', 'data']),
-        _getList(ApiConstants.announcements, const ['announcements', 'data']),
+        _getList(ApiConstants.announcements, const ['announcements', 'articles', 'data']),
       ]);
 
       _data = AdminDashboardData(

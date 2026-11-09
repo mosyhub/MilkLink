@@ -114,13 +114,13 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
         title: const Row(
           children: [
             CircleAvatar(
-              backgroundColor: AppColors.softPink,
-              child: Icon(Icons.smart_toy, color: AppColors.accentPink, size: 20),
+              backgroundColor: AppColors.softBlue,
+              child: Icon(Icons.smart_toy, color: AppColors.primaryBlue, size: 20),
             ),
             SizedBox(width: 10),
             Text('MilkLink Assistant'),
@@ -177,7 +177,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                     ),
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: msg.isUser ? AppColors.accentPink : Colors.white,
+                      color: msg.isUser ? AppColors.primaryBlue : Colors.white,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
@@ -240,7 +240,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.send, color: AppColors.accentPink),
+                  icon: const Icon(Icons.send, color: AppColors.primaryBlue),
                   onPressed: () => _sendMessage(),
                 ),
               ],

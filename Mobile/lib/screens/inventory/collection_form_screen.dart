@@ -133,7 +133,7 @@ class _CollectionFormScreenState extends State<CollectionFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
         title: const Text('Edit Collection Record', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
@@ -210,7 +210,7 @@ class _CollectionFormScreenState extends State<CollectionFormScreen> {
                             constraints: const BoxConstraints(minHeight: 48),
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                             decoration: BoxDecoration(
-                              color: AppColors.background,
+                              color: AppColors.surface,
                               border: Border.all(color: AppColors.border),
                               borderRadius: BorderRadius.circular(8),
                             ),

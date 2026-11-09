@@ -1,18 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
 import '../../core/constants/app_colors.dart';
+import '../../models/notification_model.dart';
 import '../../providers/notifications_provider.dart';
+import '../../widgets/app_widgets.dart';
 
 class NotificationsScreen extends StatelessWidget {
-  const NotificationsScreen({Key? key}) : super(key: key);
+  const NotificationsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final notifProvider = Provider.of<NotificationsProvider>(context);
+    final all = notifProvider.notifications;
+
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+
+    final todayList = all.where((n) => n.notifiedAt.isAfter(todayStart)).toList();
+    final earlierList = all.where((n) => !n.notifiedAt.isAfter(todayStart)).toList();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
         title: const Text('Notifications'),
         backgroundColor: Colors.white,
@@ -20,110 +30,135 @@ class NotificationsScreen extends StatelessWidget {
         elevation: 0,
       ),
       body: RefreshIndicator(
+        color: AppColors.primaryBlue,
         onRefresh: () => notifProvider.fetchNotifications(),
-        child: notifProvider.notifications.isEmpty
+        child: all.isEmpty
             ? const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.notifications_none, size: 64, color: AppColors.textMuted),
-                    SizedBox(height: 12),
-                    Text(
-                      'No notifications yet',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'You will receive reminders for milk letting activities and donation status updates.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                    ),
-                  ],
+                child: EmptyState(
+                  message: 'No notifications yet.\nYou will receive reminders for appointments and milk processing updates.',
                 ),
               )
-            : ListView.separated(
-                padding: const EdgeInsets.all(16),
-                itemCount: notifProvider.notifications.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
-                itemBuilder: (context, index) {
-                  final notif = notifProvider.notifications[index];
-                  return Dismissible(
-                    key: Key(notif.id),
-                    direction: DismissDirection.endToStart,
-                    background: Container(
-                      alignment: Alignment.centerRight,
-                      padding: const EdgeInsets.only(right: 20),
-                      decoration: BoxDecoration(
-                        color: AppColors.error,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: const Icon(Icons.delete, color: Colors.white),
-                    ),
-                    child: InkWell(
-                      onTap: () {
-                        if (!notif.seen) {
-                          notifProvider.markAsSeen(notif.id);
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: notif.seen ? Colors.white : AppColors.softPink.withValues(alpha: 0.4),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: notif.seen ? AppColors.border : AppColors.accentPink.withValues(alpha: 0.3),
-                          ),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: notif.seen ? AppColors.divider : AppColors.softPink,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.notifications,
-                                size: 20,
-                                color: notif.seen ? AppColors.textSecondary : AppColors.accentPink,
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    notif.title,
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: notif.seen ? FontWeight.w600 : FontWeight.bold,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    notif.body,
-                                    style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.3),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    DateFormat('MMM d, h:mm a').format(notif.notifiedAt),
-                                    style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+            : SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (todayList.isNotEmpty) ...[
+                      const Text(
+                        'Today',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryNavy,
                         ),
                       ),
-                    ),
-                  );
-                },
+                      const SizedBox(height: 10),
+                      ...todayList.map((n) => Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: _buildNotifCard(context, n, notifProvider),
+                          )),
+                      const SizedBox(height: 16),
+                    ],
+                    if (earlierList.isNotEmpty) ...[
+                      const Text(
+                        'Earlier',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryNavy,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      ...earlierList.map((n) => Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: _buildNotifCard(context, n, notifProvider),
+                          )),
+                    ],
+                    const SizedBox(height: 24),
+                  ],
+                ),
               ),
       ),
     );
   }
-}
 
+  Widget _buildNotifCard(
+    BuildContext context,
+    NotificationItem notif,
+    NotificationsProvider notifProvider,
+  ) {
+    final timeStr = DateFormat('MMM d, h:mm a').format(notif.notifiedAt);
+
+    return AppCard(
+      padding: const EdgeInsets.all(14),
+      color: notif.seen ? Colors.white : AppColors.softBlue.withValues(alpha: 0.5),
+      onTap: () {
+        if (!notif.seen) {
+          notifProvider.markAsSeen(notif.id);
+        }
+      },
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: AppColors.softBlue,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            alignment: Alignment.center,
+            child: const Icon(Icons.notifications_outlined, size: 20, color: AppColors.primaryNavy),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        notif.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: notif.seen ? FontWeight.w600 : FontWeight.w700,
+                          color: AppColors.primaryNavy,
+                        ),
+                      ),
+                    ),
+                    if (!notif.seen) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: const BoxDecoration(
+                          color: AppColors.primaryBlue,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  notif.body,
+                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.35),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  timeStr,
+                  style: const TextStyle(fontSize: 10.5, color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

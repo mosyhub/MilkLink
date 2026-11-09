@@ -199,7 +199,7 @@ int get _pooledVolume => widget.selectedEntries
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
         title: const Text('Pasteurize Milk Batch', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
@@ -280,7 +280,7 @@ int get _pooledVolume => widget.selectedEntries
                             return Chip(
                               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               visualDensity: VisualDensity.compact,
-                              backgroundColor: AppColors.background,
+                              backgroundColor: AppColors.surface,
                               avatar: const Icon(Icons.person, size: 14, color: AppColors.primaryNavy),
                               label: Text(d, style: const TextStyle(fontSize: 12)),
                             );
@@ -350,7 +350,7 @@ int get _pooledVolume => widget.selectedEntries
                             constraints: const BoxConstraints(minHeight: 48),
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                             decoration: BoxDecoration(
-                              color: AppColors.background,
+                              color: AppColors.surface,
                               border: Border.all(color: AppColors.border),
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -470,7 +470,7 @@ int get _pooledVolume => widget.selectedEntries
                           return Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: planned <= _pooledVolume ? AppColors.infoBg : AppColors.errorBg,
+                              color: planned <= _pooledVolume ? AppColors.softBlue : AppColors.errorBg,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
@@ -478,7 +478,7 @@ int get _pooledVolume => widget.selectedEntries
                                 Icon(
                                   planned <= _pooledVolume ? Icons.check_circle_outline : Icons.error_outline,
                                   size: 16,
-                                  color: planned <= _pooledVolume ? AppColors.info : AppColors.error,
+                                  color: planned <= _pooledVolume ? AppColors.primaryBlue : AppColors.error,
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
@@ -486,7 +486,7 @@ int get _pooledVolume => widget.selectedEntries
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
-                                    color: planned <= _pooledVolume ? AppColors.info : AppColors.error,
+                                    color: planned <= _pooledVolume ? AppColors.primaryBlue : AppColors.error,
                                   ),
                                 ),
                               ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../widgets/app_widgets.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/network/api_client.dart';
 import '../../widgets/custom_button.dart';
@@ -69,7 +70,7 @@ class _DonorMilkRequestScreenState extends State<DonorMilkRequestScreen> {
           builder: (_) => AlertDialog(
             title: const Row(
               children: [
-                Icon(Icons.assignment_turned_in, color: AppColors.accentPink),
+                Icon(Icons.assignment_turned_in, color: AppColors.primaryBlue),
                 SizedBox(width: 8),
                 Text('Request Submitted'),
               ],
@@ -101,12 +102,8 @@ class _DonorMilkRequestScreenState extends State<DonorMilkRequestScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Request Human Milk'),
-        backgroundColor: Colors.white,
-        elevation: 0,
-      ),
+      backgroundColor: AppColors.pageBackground,
+      appBar: AppTopBar(title: 'Request Human Milk'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -200,3 +197,4 @@ class _DonorMilkRequestScreenState extends State<DonorMilkRequestScreen> {
     );
   }
 }
+

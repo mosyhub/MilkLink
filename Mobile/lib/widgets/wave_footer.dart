@@ -44,7 +44,7 @@ class _WavePainter extends CustomPainter {
 
     // Layer 2: Mid wave (waveBlue at 65% opacity)
     final midPaint = Paint()
-      ..color = AppColors.waveBlue.withValues(alpha: 0.65)
+      ..color = AppColors.softBlue.withValues(alpha: 0.65)
       ..style = PaintingStyle.fill;
     final midPath = Path()
       ..moveTo(0, h * 0.6)

@@ -147,7 +147,7 @@ class _StackedDataCardState extends State<StackedDataCard> {
               ],
             ),
           ),
-          const Divider(height: 1, color: AppColors.divider),
+          const Divider(height: 1, color: AppColors.border),
 
           // Primary Fields (3 critical points if >5 fields)
           Padding(
@@ -166,7 +166,7 @@ class _StackedDataCardState extends State<StackedDataCard> {
                 width: double.infinity,
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                 decoration: const BoxDecoration(
-                  color: AppColors.pinkTint, // Soft blue tint
+                  color: AppColors.softBlue, // Soft blue tint
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -192,7 +192,7 @@ class _StackedDataCardState extends State<StackedDataCard> {
                 bottomLeft: Radius.circular(14),
                 bottomRight: Radius.circular(14),
               ),
-              border: const Border(top: BorderSide(color: AppColors.divider)),
+              border: const Border(top: BorderSide(color: AppColors.border)),
             ),
             child: Row(
               children: [

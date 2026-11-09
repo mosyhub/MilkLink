@@ -123,7 +123,7 @@ class _DonorScreeningScreenState extends State<DonorScreeningScreen> {
     final donorProvider = Provider.of<DonorProvider>(context);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
         title: const Text('Donor Screening Questionnaire'),
         backgroundColor: Colors.white,
@@ -220,7 +220,7 @@ class _DonorScreeningScreenState extends State<DonorScreeningScreen> {
                         ? DateFormat('MMMM d, yyyy').format(_motherBirthday!)
                         : 'Select Birthday',
                     style: TextStyle(
-                      color: _motherBirthday != null ? AppColors.textPrimary : AppColors.textMuted,
+                      color: _motherBirthday != null ? AppColors.textPrimary : AppColors.textSecondary,
                       fontSize: 15,
                     ),
                   ),
@@ -333,7 +333,7 @@ class _DonorScreeningScreenState extends State<DonorScreeningScreen> {
                         ? DateFormat('MMMM d, yyyy').format(_childBirthday!)
                         : 'Select Birthday',
                     style: TextStyle(
-                      color: _childBirthday != null ? AppColors.textPrimary : AppColors.textMuted,
+                      color: _childBirthday != null ? AppColors.textPrimary : AppColors.textSecondary,
                       fontSize: 15,
                     ),
                   ),
@@ -413,7 +413,7 @@ class _DonorScreeningScreenState extends State<DonorScreeningScreen> {
                     ChoiceChip(
                       label: const Text('Yes'),
                       selected: currentVal == 'Yes',
-                      selectedColor: AppColors.accentPink.withValues(alpha: 0.15),
+                      selectedColor: AppColors.primaryBlue.withValues(alpha: 0.15),
                       onSelected: (_) => setState(() => _questionnaire[question] = 'Yes'),
                     ),
                     const SizedBox(width: 10),
@@ -444,7 +444,7 @@ class _DonorScreeningScreenState extends State<DonorScreeningScreen> {
               child: CustomButton(
                 text: 'Submit Application',
                 isLoading: provider.status == DonorStatus.loading,
-                backgroundColor: AppColors.accentPink,
+                backgroundColor: AppColors.primaryBlue,
                 onPressed: _submitScreening,
               ),
             ),

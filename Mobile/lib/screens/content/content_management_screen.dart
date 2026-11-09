@@ -11,7 +11,9 @@ import 'article_detail_screen.dart';
 import 'article_form_screen.dart';
 
 class ContentManagementScreen extends StatefulWidget {
-  const ContentManagementScreen({super.key});
+  final VoidCallback? onBack;
+
+  const ContentManagementScreen({super.key, this.onBack});
 
   @override
   State<ContentManagementScreen> createState() => _ContentManagementScreenState();
@@ -345,6 +347,14 @@ class _ContentManagementScreenState extends State<ContentManagementScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Content Management'),
+        leading: widget.onBack != null
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                tooltip: 'Back',
+                onPressed: widget.onBack,
+              )
+            : null,
+        automaticallyImplyLeading: widget.onBack == null,
         bottom: TabBar(
           controller: _tabController,
           labelColor: AppColors.primaryNavy,

@@ -497,7 +497,7 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
     final title = _isEdit ? 'Edit ${_kind} Schedule' : 'Create ${_kind} Schedule';
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
@@ -623,7 +623,7 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
                             constraints: const BoxConstraints(minHeight: 48),
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                             decoration: BoxDecoration(
-                              color: AppColors.background,
+                              color: AppColors.surface,
                               border: Border.all(color: AppColors.border),
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -642,7 +642,7 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
                                       color: (_kind == 'Event' ? _eventDate == null : _pickupDateRange == null)
-                                          ? AppColors.textMuted
+                                          ? AppColors.textSecondary
                                           : AppColors.textPrimary,
                                     ),
                                   ),
@@ -694,7 +694,7 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
                                   constraints: const BoxConstraints(minHeight: 48),
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                   decoration: BoxDecoration(
-                                    color: AppColors.background,
+                                    color: AppColors.surface,
                                     border: Border.all(color: AppColors.border),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
@@ -712,7 +712,7 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
                                             style: TextStyle(
                                               fontWeight: FontWeight.w600,
                                               fontSize: 14,
-                                              color: _startTime != null ? AppColors.textPrimary : AppColors.textMuted,
+                                              color: _startTime != null ? AppColors.textPrimary : AppColors.textSecondary,
                                             ),
                                           ),
                                         ],
@@ -731,7 +731,7 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
                                   constraints: const BoxConstraints(minHeight: 48),
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                   decoration: BoxDecoration(
-                                    color: AppColors.background,
+                                    color: AppColors.surface,
                                     border: Border.all(color: AppColors.border),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
@@ -749,7 +749,7 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
                                             style: TextStyle(
                                               fontWeight: FontWeight.w600,
                                               fontSize: 14,
-                                              color: _endTime != null ? AppColors.textPrimary : AppColors.textMuted,
+                                              color: _endTime != null ? AppColors.textPrimary : AppColors.textSecondary,
                                             ),
                                           ),
                                         ],
@@ -960,7 +960,7 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: AppColors.infoBg,
+                                color: AppColors.softBlue,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Row(

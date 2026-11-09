@@ -25,6 +25,12 @@ class StaffProvider extends ChangeNotifier {
   List<RequestModel> _activeRequests = [];
   List<RequestModel> _archivedRequests = [];
 
+  // Auxiliary counts for dashboard badges
+  int _activeSchedulesCount = 0;
+  int _activeInventoryCount = 0;
+  int _pendingRegistrationsCount = 0;
+  int _screeningAppointmentsCount = 0;
+
   StaffLoadingStatus get status => _status;
   String? get errorMessage => _errorMessage;
   String? get lastCreatedClaimToken => _lastCreatedClaimToken;
@@ -38,6 +44,35 @@ class StaffProvider extends ChangeNotifier {
 
   List<RequestModel> get activeRequests => _activeRequests;
   List<RequestModel> get archivedRequests => _archivedRequests;
+
+  int get activeSchedulesCount => _activeSchedulesCount;
+  int get activeInventoryCount => _activeInventoryCount;
+  int get pendingRegistrationsCount => _pendingRegistrationsCount;
+  int get screeningAppointmentsCount => _screeningAppointmentsCount;
+
+  Future<void> fetchDashboardCounts() async {
+    try {
+      final responses = await Future.wait([
+        ApiClient.get(ApiConstants.schedules),
+        ApiClient.get(ApiConstants.inventories),
+        ApiClient.get(ApiConstants.staffPendingRegistrations),
+        ApiClient.get(ApiConstants.staffScreeningAppointments),
+      ]);
+      if (responses[0] is Map && responses[0]['schedules'] is List) {
+        _activeSchedulesCount = (responses[0]['schedules'] as List).length;
+      }
+      if (responses[1] is Map && responses[1]['inventories'] is List) {
+        _activeInventoryCount = (responses[1]['inventories'] as List).length;
+      }
+      if (responses[2] is Map && responses[2]['registrations'] is List) {
+        _pendingRegistrationsCount = (responses[2]['registrations'] as List).length;
+      }
+      if (responses[3] is Map && responses[3]['appointments'] is List) {
+        _screeningAppointmentsCount = (responses[3]['appointments'] as List).length;
+      }
+      notifyListeners();
+    } catch (_) {}
+  }
 
   // ───────────────────────────────────────────────────────────────────────────
   // DONOR CRUD & ARCHIVE

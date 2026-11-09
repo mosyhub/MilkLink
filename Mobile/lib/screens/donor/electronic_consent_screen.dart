@@ -21,7 +21,7 @@ class _ElectronicConsentScreenState extends State<ElectronicConsentScreen> {
   bool _isSubmitting = false;
 
   final String _consentText = '''
-PASIG CITY HUMAN MILK BANK - ELECTRONIC DONOR CONSENT (DEDE1)
+PASIG CITY HUMAN MILK BANK - ELECTRONIC DONOR CONSENT
 
 1. I voluntarily agree to donate my excess breast milk to the Pasig City Human Milk Bank (MilkLink).
 2. I certify that all personal, health, and medical information provided in my screening questionnaire is true and accurate.
@@ -132,7 +132,7 @@ PASIG CITY HUMAN MILK BANK - ELECTRONIC DONOR CONSENT (DEDE1)
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
         title: const Text('Electronic Consent Form'),
         backgroundColor: Colors.white,
@@ -144,7 +144,7 @@ PASIG CITY HUMAN MILK BANK - ELECTRONIC DONOR CONSENT (DEDE1)
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Official DEDE1 Electronic Donor Consent',
+              'Official Electronic Donor Consent',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
@@ -168,12 +168,12 @@ PASIG CITY HUMAN MILK BANK - ELECTRONIC DONOR CONSENT (DEDE1)
               children: [
                 Checkbox(
                   value: _acknowledged,
-                  activeColor: AppColors.accentPink,
+                  activeColor: AppColors.primaryBlue,
                   onChanged: (val) => setState(() => _acknowledged = val ?? false),
                 ),
                 const Expanded(
                   child: Text(
-                    'I have read, understood, and voluntarily agree to the complete DEDE1 electronic consent terms.',
+                    'I have read, understood, and voluntarily agree to the complete electronic consent terms.',
                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                   ),
                 ),

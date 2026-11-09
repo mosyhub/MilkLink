@@ -131,7 +131,7 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
         title: const Text('Edit Fridge Entry', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
@@ -213,7 +213,7 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
                             constraints: const BoxConstraints(minHeight: 48),
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                             decoration: BoxDecoration(
-                              color: AppColors.background,
+                              color: AppColors.surface,
                               border: Border.all(color: AppColors.border),
                               borderRadius: BorderRadius.circular(8),
                             ),

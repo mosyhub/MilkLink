@@ -120,7 +120,7 @@ class RequestModel {
       diagnosis: json['diagnosis'] ?? 'N/A',
       reason: json['reason'] ?? 'N/A',
       doctor: json['doctor'] ?? 'N/A',
-      hospital: json['hospital'] ?? 'Pasig-Pateros District Hospital',
+      hospital: json['hospital'] ?? 'Pasig City General Hospital',
       department: json['department'],
       volume: vol,
       days: dys,

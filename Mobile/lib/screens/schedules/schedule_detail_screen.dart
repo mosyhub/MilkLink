@@ -166,7 +166,7 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
     switch (status) {
       case 'Scheduled':
       case 'Approved':
-        return AppColors.info;
+        return AppColors.primaryBlue;
       case 'Completed':
       case 'Picked Up':
         return AppColors.success;
@@ -184,7 +184,7 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
     final statusColor = _getStatusColor(_schedule.effectiveStatus);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
         title: Text('${_schedule.kind} Schedule Details', style: const TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
@@ -529,7 +529,7 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
               Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
               if (subtext != null) ...[
                 const SizedBox(height: 2),
-                Text(subtext, style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                Text(subtext, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
               ],
             ],
           ),

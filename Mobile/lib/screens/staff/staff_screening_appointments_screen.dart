@@ -72,7 +72,7 @@ class _StaffScreeningAppointmentsScreenState extends State<StaffScreeningAppoint
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: status.contains('Reject') ? AppColors.error : AppColors.accentPink,
+              backgroundColor: status.contains('Reject') ? AppColors.error : AppColors.primaryBlue,
             ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Confirm'),
@@ -227,7 +227,7 @@ class _StaffScreeningAppointmentsScreenState extends State<StaffScreeningAppoint
           IconButton(icon: const Icon(Icons.refresh), onPressed: _fetchAppointments),
         ],
       ),
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       body: Column(
         children: [
           // Filter Chips
@@ -286,11 +286,11 @@ class _StaffScreeningAppointmentsScreenState extends State<StaffScreeningAppoint
       child: FilterChip(
         selected: isSelected,
         label: Text(count != null ? '$label ($count)' : label),
-        selectedColor: AppColors.accentPink.withValues(alpha: 0.2),
-        checkmarkColor: AppColors.accentPink,
+        selectedColor: AppColors.primaryBlue.withValues(alpha: 0.2),
+        checkmarkColor: AppColors.primaryBlue,
         labelStyle: TextStyle(
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          color: isSelected ? AppColors.accentPink : AppColors.textPrimary,
+          color: isSelected ? AppColors.primaryBlue : AppColors.textPrimary,
           fontSize: 12,
         ),
         onSelected: (val) {
@@ -365,38 +365,62 @@ class _StaffScreeningAppointmentsScreenState extends State<StaffScreeningAppoint
 
           // Action buttons
           Row(
-            mainAxisAlignment: MainAxisAlignment.end,
             children: [
               if (status == 'Pending Confirmation') ...[
-                TextButton(
-                  style: TextButton.styleFrom(foregroundColor: AppColors.error),
-                  onPressed: () => _updateStatus(apt['_id'], 'Rejected by Staff'),
-                  child: const Text('Reject Slot'),
+                Expanded(
+                  child: TextButton(
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.error,
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                    ),
+                    onPressed: () => _updateStatus(apt['_id'], 'Rejected by Staff'),
+                    child: const Text('Reject Slot'),
+                  ),
                 ),
                 const SizedBox(width: 8),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryNavy),
-                  onPressed: () => _updateStatus(apt['_id'], 'Confirmed'),
-                  child: const Text('Confirm Slot'),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryNavy,
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                    ),
+                    onPressed: () => _updateStatus(apt['_id'], 'Confirmed'),
+                    child: const Text('Confirm Slot'),
+                  ),
                 ),
               ] else if (status == 'Confirmed') ...[
-                OutlinedButton(
-                  onPressed: () => _updateStatus(apt['_id'], 'Attended'),
-                  child: const Text('Record Attendance'),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => _updateStatus(apt['_id'], 'Attended'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                    ),
+                    child: const Text('Record Attendance'),
+                  ),
                 ),
                 const SizedBox(width: 8),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),
-                  icon: const Icon(Icons.check, size: 16),
-                  label: const Text('Complete Screening'),
-                  onPressed: () => _openCompleteScreeningDialog(apt),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.success,
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                    ),
+                    icon: const Icon(Icons.check, size: 16),
+                    label: const Text('Complete Screening'),
+                    onPressed: () => _openCompleteScreeningDialog(apt),
+                  ),
                 ),
               ] else if (status == 'Attended') ...[
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),
-                  icon: const Icon(Icons.verified, size: 16),
-                  label: const Text('Complete Screening & Update Donor'),
-                  onPressed: () => _openCompleteScreeningDialog(apt),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.success,
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                    ),
+                    icon: const Icon(Icons.verified, size: 16),
+                    label: const Text('Complete Screening & Update Donor'),
+                    onPressed: () => _openCompleteScreeningDialog(apt),
+                  ),
                 ),
               ] else ...[
                 Text(

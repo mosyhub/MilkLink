@@ -231,7 +231,7 @@ class _RequestFormDialogState extends State<RequestFormDialog> {
                         // Location (Department or Hospital)
                         CustomTextField(
                           label: _patientType == 'Inpatient' ? 'Department / Ward *' : 'Hospital / Clinic *',
-                          hint: _patientType == 'Inpatient' ? 'e.g. NICU / Ward 3' : 'e.g. Pasig-Pateros District Hospital',
+                          hint: _patientType == 'Inpatient' ? 'e.g. NICU / Ward 3' : 'e.g. Pasig City General Hospital',
                           controller: _locationController,
                           validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
                         ),

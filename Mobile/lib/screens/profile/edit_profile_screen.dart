@@ -289,7 +289,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final isStaffOrAdmin = user != null && (user.isStaff || user.isAdmin);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
         title: const Text('Edit Profile'),
         backgroundColor: Colors.white,
@@ -315,7 +315,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ),
                       child: CircleAvatar(
                         radius: 46,
-                        backgroundColor: isStaffOrAdmin ? AppColors.softBlue : AppColors.softPink,
+                        backgroundColor: isStaffOrAdmin ? AppColors.softBlue : AppColors.softBlue,
                         backgroundImage: _avatarBytes != null
                             ? MemoryImage(_avatarBytes!)
                             : (_avatarBase64OrUrl != null &&
@@ -331,7 +331,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 style: TextStyle(
                                   fontSize: 34,
                                   fontWeight: FontWeight.bold,
-                                  color: isStaffOrAdmin ? AppColors.primaryNavy : AppColors.accentPink,
+                                  color: isStaffOrAdmin ? AppColors.primaryNavy : AppColors.primaryBlue,
                                 ),
                               )
                             : null,

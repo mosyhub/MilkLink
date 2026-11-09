@@ -300,7 +300,7 @@ class _FridgeDetailScreenState extends State<FridgeDetailScreen>
     final depletedEntries = _entries.where((e) => e.status == 'Depleted').toList();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
         title: Text(_fridge.name, style: const TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
@@ -366,7 +366,7 @@ class _FridgeDetailScreenState extends State<FridgeDetailScreen>
                               label: 'Entries',
                               value: '${_fridge.entryCount}',
                               icon: Icons.list_alt,
-                              color: AppColors.info,
+                              color: AppColors.primaryBlue,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -375,7 +375,7 @@ class _FridgeDetailScreenState extends State<FridgeDetailScreen>
                               label: 'Near Expiry',
                               value: '${_fridge.nearExpiryCount}',
                               icon: Icons.warning_amber_rounded,
-                              color: _fridge.nearExpiryCount > 0 ? AppColors.warning : AppColors.textMuted,
+                              color: _fridge.nearExpiryCount > 0 ? AppColors.warning : AppColors.textSecondary,
                             ),
                           ),
                         ],
@@ -463,7 +463,7 @@ class _FridgeDetailScreenState extends State<FridgeDetailScreen>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(isExpiredSection ? Icons.check_circle_outline : Icons.inbox_outlined, size: 48, color: AppColors.textMuted),
+              Icon(isExpiredSection ? Icons.check_circle_outline : Icons.inbox_outlined, size: 48, color: AppColors.textSecondary),
               const SizedBox(height: 12),
               Text(
                 isExpiredSection ? 'No expired milk entries.' : 'No entries yet in this category.',
@@ -635,7 +635,7 @@ class _FridgeDetailScreenState extends State<FridgeDetailScreen>
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          color: isDepleted ? AppColors.textMuted : AppColors.success,
+                          color: isDepleted ? AppColors.textSecondary : AppColors.success,
                         ),
                       ),
                     ),
@@ -665,7 +665,7 @@ class _FridgeDetailScreenState extends State<FridgeDetailScreen>
                 ),
                 if (batch.donorNames.isNotEmpty) ...[
                   const SizedBox(height: 6),
-                  Text('Donors: ${batch.donorNames.join(", ")}', style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                  Text('Donors: ${batch.donorNames.join(", ")}', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                 ],
               ],
             ),

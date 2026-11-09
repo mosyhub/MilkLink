@@ -314,7 +314,7 @@ class _AccountManagementScreenState extends State<AccountManagementScreen>
   Widget build(BuildContext context) {
     final tabIdx = _tabController.index;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
         title: const Text('Account Management', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
@@ -434,7 +434,7 @@ class _AccountManagementScreenState extends State<AccountManagementScreen>
                         )
                       : null,
                   filled: true,
-                  fillColor: AppColors.background,
+                  fillColor: AppColors.surface,
                   contentPadding: const EdgeInsets.symmetric(vertical: 10),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -588,7 +588,7 @@ class _AccountManagementScreenState extends State<AccountManagementScreen>
                   ),
                 ),
 
-                const Icon(Icons.chevron_right, color: AppColors.textMuted),
+                const Icon(Icons.chevron_right, color: AppColors.textSecondary),
               ],
             ),
           ),

@@ -7,7 +7,9 @@ import 'schedule_detail_screen.dart';
 import 'schedule_form_screen.dart';
 
 class SchedulesScreen extends StatefulWidget {
-  const SchedulesScreen({super.key});
+  final VoidCallback? onBack;
+
+  const SchedulesScreen({super.key, this.onBack});
 
   @override
   State<SchedulesScreen> createState() => _SchedulesScreenState();
@@ -212,12 +214,20 @@ class _SchedulesScreenState extends State<SchedulesScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
         title: const Text('Schedules', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         foregroundColor: AppColors.primaryNavy,
         elevation: 0,
+        leading: widget.onBack != null
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                tooltip: 'Back',
+                onPressed: widget.onBack,
+              )
+            : null,
+        automaticallyImplyLeading: widget.onBack == null,
         bottom: TabBar(
           controller: _tabController,
           labelColor: AppColors.primaryNavy,
@@ -393,7 +403,7 @@ class _ScheduleTabViewState extends State<_ScheduleTabView> {
     switch (status) {
       case 'Scheduled':
       case 'Approved':
-        return AppColors.info;
+        return AppColors.primaryBlue;
       case 'Completed':
       case 'Picked Up':
         return AppColors.success;
@@ -445,7 +455,7 @@ class _ScheduleTabViewState extends State<_ScheduleTabView> {
                           )
                         : null,
                     filled: true,
-                    fillColor: AppColors.background,
+                    fillColor: AppColors.surface,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -472,7 +482,7 @@ class _ScheduleTabViewState extends State<_ScheduleTabView> {
                       ),
                       selectedColor: AppColors.primaryNavy,
                       checkmarkColor: Colors.white,
-                      backgroundColor: AppColors.background,
+                      backgroundColor: AppColors.surface,
                       onSelected: (val) {
                         setState(() {
                           _showArchived = false;
@@ -491,7 +501,7 @@ class _ScheduleTabViewState extends State<_ScheduleTabView> {
                       ),
                       selectedColor: AppColors.primaryNavy,
                       checkmarkColor: Colors.white,
-                      backgroundColor: AppColors.background,
+                      backgroundColor: AppColors.surface,
                       onSelected: (val) {
                         setState(() {
                           _showArchived = true;
@@ -560,7 +570,7 @@ class _ScheduleTabViewState extends State<_ScheduleTabView> {
             Icon(
               _showArchived ? Icons.archive_outlined : Icons.calendar_today_outlined,
               size: 56,
-              color: AppColors.textMuted,
+              color: AppColors.textSecondary,
             ),
             const SizedBox(height: 16),
             Text(
@@ -708,7 +718,7 @@ class _ScheduleTabViewState extends State<_ScheduleTabView> {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    const Text('•', style: TextStyle(color: AppColors.textMuted)),
+                    const Text('•', style: TextStyle(color: AppColors.textSecondary)),
                     const SizedBox(width: 10),
                     const Icon(Icons.access_time, size: 15, color: AppColors.primaryNavy),
                     const SizedBox(width: 6),

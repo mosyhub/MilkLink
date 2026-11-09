@@ -204,7 +204,7 @@ class _PendingRegistrationsScreenState extends State<PendingRegistrationsScreen>
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.accentPink),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue),
               onPressed: () {
                 if (birthDate == null || streetCtrl.text.trim().isEmpty || brgyCtrl.text.trim().isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -283,7 +283,7 @@ class _PendingRegistrationsScreenState extends State<PendingRegistrationsScreen>
           IconButton(icon: const Icon(Icons.refresh), onPressed: _fetchRegistrations),
         ],
       ),
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       body: Column(
         children: [
           // Filter Tabs
@@ -346,7 +346,7 @@ class _PendingRegistrationsScreenState extends State<PendingRegistrationsScreen>
           padding: const EdgeInsets.symmetric(vertical: 8),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.accentPink : AppColors.softBlue,
+            color: isSelected ? AppColors.primaryBlue : AppColors.softBlue,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
@@ -415,7 +415,7 @@ class _PendingRegistrationsScreenState extends State<PendingRegistrationsScreen>
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.background,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -471,7 +471,7 @@ class _PendingRegistrationsScreenState extends State<PendingRegistrationsScreen>
                   icon: const Icon(Icons.person_add, size: 16),
                   label: const Text('Create Donor Profile'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.accentPink,
+                    backgroundColor: AppColors.primaryBlue,
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   ),
                 ),

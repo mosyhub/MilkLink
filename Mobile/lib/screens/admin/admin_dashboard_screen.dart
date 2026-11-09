@@ -8,8 +8,9 @@ import '../../models/patient_model.dart';
 import '../../providers/admin/admin_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/staff_provider.dart';
-import '../../widgets/stacked_data_card.dart';
-import '../../widgets/admin/admin_module_card.dart';
+import '../../widgets/dashboard_grid_scaffold.dart';
+import '../../widgets/record_card.dart';
+import '../../widgets/records_list_scaffold.dart';
 import '../../widgets/admin/admin_summary_card.dart';
 import '../auth/login_screen.dart';
 import '../staff/dialogs/donor_form_dialog.dart';
@@ -20,6 +21,8 @@ import '../accounts/account_management_screen.dart';
 import '../content/content_management_screen.dart';
 import '../requests/milk_requests_screen.dart';
 import '../metrics/metrics_dashboard_screen.dart';
+import '../../widgets/user_avatar.dart';
+import '../profile/edit_profile_screen.dart';
 
 
 class AdminDashboardScreen extends StatefulWidget {
@@ -31,9 +34,9 @@ class AdminDashboardScreen extends StatefulWidget {
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   AdminModule? _selectedModule;
-  int _bottomIndex = 0;
   final TextEditingController _recordSearchController = TextEditingController();
   String _recordSearch = '';
+  int _activeArchivedFilter = 0;
 
   @override
   void dispose() {
@@ -45,13 +48,33 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AdminProvider>().refresh();
-      final staffProvider = context.read<StaffProvider>();
-      staffProvider.fetchDonors();
-      staffProvider.fetchDonors(isArchived: true);
-      staffProvider.fetchPatients();
-      staffProvider.fetchPatients(isArchived: true);
+      _loadAdminData();
     });
+  }
+
+  void _loadAdminData() {
+    context.read<AdminProvider>().refresh();
+    final staffProvider = context.read<StaffProvider>();
+    staffProvider.fetchDonors();
+    staffProvider.fetchDonors(isArchived: true);
+    staffProvider.fetchPatients();
+    staffProvider.fetchPatients(isArchived: true);
+    staffProvider.fetchRequests();
+    staffProvider.fetchRequests(isArchived: true);
+  }
+
+  Future<void> _handleRefresh() async {
+    final adminProvider = context.read<AdminProvider>();
+    final staffProvider = context.read<StaffProvider>();
+    await Future.wait([
+      adminProvider.refresh(),
+      staffProvider.fetchDonors(),
+      staffProvider.fetchDonors(isArchived: true),
+      staffProvider.fetchPatients(),
+      staffProvider.fetchPatients(isArchived: true),
+      staffProvider.fetchRequests(),
+      staffProvider.fetchRequests(isArchived: true),
+    ]);
   }
 
   Future<void> _logout() async {
@@ -61,6 +84,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       context,
       MaterialPageRoute(builder: (_) => const LoginScreen()),
       (_) => false,
+    );
+  }
+
+  void _showProfile() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const EditProfileScreen()),
     );
   }
 
@@ -106,6 +136,79 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     }
   }
 
+  void _generateDonorClaimToken(DonorModel donor) async {
+    final staffProvider = context.read<StaffProvider>();
+    final token = await staffProvider.generateDonorClaimToken(donor.id);
+    if (token != null && mounted) {
+      _showMessage('Claim token generated: $token');
+    }
+  }
+
+  void _generatePatientClaimToken(PatientModel patient) async {
+    final staffProvider = context.read<StaffProvider>();
+    final token = await staffProvider.generatePatientClaimToken(patient.id);
+    if (token != null && mounted) {
+      _showMessage('Claim token generated: $token');
+    }
+  }
+
+  Widget _buildClaimBadge(bool isClaimed) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: isClaimed
+            ? AppColors.success.withValues(alpha: 0.12)
+            : AppColors.warning.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isClaimed ? Icons.link : Icons.link_off,
+            size: 11,
+            color: isClaimed ? AppColors.success : AppColors.warning,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            isClaimed ? 'Claimed / Linked' : 'Unclaimed',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: isClaimed ? AppColors.success : AppColors.warning,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEligibilityBadge(String eligibility) {
+    Color fg = AppColors.primaryNavy;
+    if (eligibility.toLowerCase() == 'eligible') {
+      fg = AppColors.success;
+    } else if (eligibility.toLowerCase() == 'not eligible' ||
+        eligibility.toLowerCase() == 'ineligible') {
+      fg = AppColors.error;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: AppColors.softBlue,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        eligibility,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: fg,
+        ),
+      ),
+    );
+  }
+
   void _openDonorStatusDialog(DonorModel donor) {
     final staffProvider = context.read<StaffProvider>();
     var selectedStatus = donor.eligibility;
@@ -123,47 +226,54 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           title: const Text('Edit Donor Status'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Eligibility Status',
-                style: TextStyle(fontWeight: FontWeight.bold),
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Eligibility Status',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    initialValue: statuses.contains(selectedStatus)
+                        ? selectedStatus
+                        : statuses.first,
+                    items: statuses
+                        .map(
+                          (status) => DropdownMenuItem(
+                            value: status,
+                            child: Text(status),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setDialogState(() => selectedStatus = value);
+                      }
+                    },
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: notesController,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      labelText: 'Review notes',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                initialValue: statuses.contains(selectedStatus)
-                    ? selectedStatus
-                    : statuses.first,
-                items: statuses
-                    .map(
-                      (status) => DropdownMenuItem(
-                        value: status,
-                        child: Text(status),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setDialogState(() => selectedStatus = value);
-                  }
-                },
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: notesController,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'Review notes',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
+            ),
           ),
           actions: [
             TextButton(
@@ -205,27 +315,34 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           title: const Text('Edit Recipient Status'),
-          content: DropdownButtonFormField<String>(
-            initialValue: statuses.contains(selectedStatus)
-                ? selectedStatus
-                : statuses.first,
-            items: statuses
-                .map(
-                  (status) => DropdownMenuItem(
-                    value: status,
-                    child: Text(status),
-                  ),
-                )
-                .toList(),
-            onChanged: (value) {
-              if (value != null) {
-                setDialogState(() => selectedStatus = value);
-              }
-            },
-            decoration: const InputDecoration(
-              labelText: 'Recipient status',
-              border: OutlineInputBorder(),
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: SingleChildScrollView(
+              child: DropdownButtonFormField<String>(
+                initialValue: statuses.contains(selectedStatus)
+                    ? selectedStatus
+                    : statuses.first,
+                items: statuses
+                    .map(
+                      (status) => DropdownMenuItem(
+                        value: status,
+                        child: Text(status),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setDialogState(() => selectedStatus = value);
+                  }
+                },
+                decoration: const InputDecoration(
+                  labelText: 'Recipient status',
+                  border: OutlineInputBorder(),
+                ),
+              ),
             ),
           ),
           actions: [
@@ -267,8 +384,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
         title: Text(title),
-        content: Text(message),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: SingleChildScrollView(
+            child: Text(message),
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -295,6 +419,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   void _showMessage(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -311,79 +436,191 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget build(BuildContext context) {
     return Consumer2<AdminProvider, StaffProvider>(
       builder: (context, provider, staffProvider, _) {
-        return Scaffold(
-          appBar: AppBar(
-            backgroundColor: Colors.white,
-            foregroundColor: AppColors.primaryNavy,
-            elevation: 0,
-            title: Row(
-              children: [
-                CircleAvatar(
-                  radius: 17,
-                  backgroundColor: AppColors.softBlue,
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    errorBuilder: (_, __, ___) {
-                      return const Icon(
-                        Icons.volunteer_activism,
-                        color: AppColors.primaryBlue,
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(width: 10),
-                const Text(
-                  'MilkLink Portal',
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ],
+        if (_selectedModule == null) {
+          final items = AdminModule.values.map((module) {
+            int count = 0;
+            if (module == AdminModule.donors) {
+              count = staffProvider.activeDonors.isNotEmpty
+                  ? staffProvider.activeDonors.length
+                  : ((provider.data.metrics['metrics'] is Map)
+                      ? (provider.data.metrics['metrics']['totalDonors'] as num? ?? 0).toInt()
+                      : 0);
+            } else if (module == AdminModule.recipients) {
+              count = staffProvider.activePatients.isNotEmpty
+                  ? staffProvider.activePatients.length
+                  : ((provider.data.metrics['metrics'] is Map)
+                      ? (provider.data.metrics['metrics']['totalRecipients'] as num? ?? 0).toInt()
+                      : 0);
+            } else if (module == AdminModule.requests) {
+              count = staffProvider.activeRequests.length;
+            } else {
+              final records = provider.data.recordsFor(module);
+              count = records.length;
+            }
+
+            return DashboardItem(
+              label: module.label,
+              icon: module.icon,
+              badgeCount: count > 0 ? count : null,
+              onTap: () => _selectModule(module),
+            );
+          }).toList();
+
+          num totalStockMl = 0;
+          for (final item in provider.data.inventory) {
+            final isPasteurized = item['isPasteurized'] == true;
+            if (isPasteurized) {
+              final bottles = (item['availableBottles'] as num?)?.toDouble() ?? 0;
+              final bType = (item['bottleType'] as num?)?.toDouble() ?? 0;
+              final vol = (item['volume'] as num?)?.toDouble() ?? 0;
+              totalStockMl += (bottles > 0 && bType > 0) ? (bottles * bType) : vol;
+            } else {
+              final vol = (item['volume'] as num?)?.toDouble() ?? 0;
+              totalStockMl += vol;
+            }
+          }
+
+          final pendingRequests = staffProvider.activeRequests
+              .where((r) => r.status.toLowerCase() == 'pending')
+              .length;
+
+          final stats = [
+            DashboardStatItem(
+              label: 'Total Donors',
+              value: staffProvider.activeDonors.isNotEmpty
+                  ? staffProvider.activeDonors.length
+                  : ((provider.data.metrics['metrics'] is Map)
+                      ? (provider.data.metrics['metrics']['totalDonors'] as num? ?? 0)
+                      : 0),
+              icon: Icons.favorite,
             ),
+            DashboardStatItem(
+              label: 'Total Recipients',
+              value: staffProvider.activePatients.isNotEmpty
+                  ? staffProvider.activePatients.length
+                  : ((provider.data.metrics['metrics'] is Map)
+                      ? (provider.data.metrics['metrics']['totalRecipients'] as num? ?? 0)
+                      : 0),
+              icon: Icons.child_care,
+            ),
+            DashboardStatItem(
+              label: 'Pending Requests',
+              value: pendingRequests,
+              icon: Icons.assignment_outlined,
+            ),
+            DashboardStatItem(
+              label: 'Milk Inventory',
+              value: totalStockMl,
+              unit: 'ml',
+              icon: Icons.inventory_2_outlined,
+            ),
+          ];
+
+          return DashboardGridScaffold(
+            title: 'Dashboard',
+            items: items,
+            stats: stats,
+            isStatsLoading: provider.status == AdminLoadStatus.loading && provider.data.inventory.isEmpty,
+            statsError: provider.status == AdminLoadStatus.error ? provider.errorMessage : null,
+            onRetryStats: _handleRefresh,
+            onRefresh: _handleRefresh,
             actions: [
               IconButton(
                 tooltip: 'Notifications',
-                onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('No new notifications')),
-                ),
-                icon: const Icon(Icons.notifications_none),
+                onPressed: () {
+                  ScaffoldMessenger.of(context).clearSnackBars();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('No new notifications')),
+                  );
+                },
+                icon: const Icon(Icons.notifications_none, color: AppColors.primaryNavy),
               ),
-              IconButton(
-                tooltip: 'Log out',
-                onPressed: _logout,
-                icon: const Icon(Icons.logout),
+              PopupMenuButton<String>(
+                tooltip: 'Account',
+                offset: const Offset(0, 48),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                onSelected: (val) {
+                  if (val == 'profile') {
+                    _showProfile();
+                  } else if (val == 'sign_out') {
+                    _logout();
+                  }
+                },
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 14, left: 4),
+                  child: Builder(builder: (ctx) {
+                    final user = Provider.of<AuthProvider>(ctx).user;
+                    return UserAvatar(
+                      radius: 17,
+                      avatarUrl: user?.avatarUrl,
+                      initial: user?.name.first.isNotEmpty == true ? user!.name.first : 'A',
+                      backgroundColor: Colors.white,
+                      textColor: AppColors.primaryNavy,
+                    );
+                  }),
+                ),
+                itemBuilder: (ctx) => const [
+                  PopupMenuItem(
+                    value: 'profile',
+                    child: Row(
+                      children: [
+                        Icon(Icons.person_outline, size: 20, color: AppColors.primaryNavy),
+                        SizedBox(width: 10),
+                        Text('Profile'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'sign_out',
+                    child: Row(
+                      children: [
+                        Icon(Icons.logout, size: 20, color: AppColors.error),
+                        SizedBox(width: 10),
+                        Text('Sign Out', style: TextStyle(color: AppColors.error)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
-          ),
-          drawer: _buildDrawer(),
-          body: _selectedModule == null
-              ? _buildHome(provider, staffProvider)
-              : _buildModule(provider, staffProvider, _selectedModule!),
-          bottomNavigationBar: NavigationBar(
-            selectedIndex: _bottomIndex,
-            onDestinationSelected: (index) {
+          );
+        }
+
+        if (_selectedModule == AdminModule.donors) {
+          return PopScope(
+            canPop: false,
+            onPopInvokedWithResult: (didPop, _) {
+              if (didPop) return;
               setState(() {
-                _bottomIndex = index;
-                _selectedModule = switch (index) {
-                  1 => AdminModule.metrics,
-                  2 => AdminModule.requests,
-                  _ => null,
-                };
+                _selectedModule = null;
+                _recordSearchController.clear();
+                _recordSearch = '';
+                _activeArchivedFilter = 0;
               });
             },
-            indicatorColor: AppColors.softBlue,
-            destinations: const [
-              NavigationDestination(
-                icon: Icon(Icons.dashboard_outlined),
-                label: 'Dashboard',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.insights_outlined),
-                label: 'Reports',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.assignment_outlined),
-                label: 'Requests',
-              ),
-            ],
+            child: _buildAdminDonorsView(staffProvider),
+          );
+        }
+
+        if (_selectedModule == AdminModule.recipients) {
+          return PopScope(
+            canPop: false,
+            onPopInvokedWithResult: (didPop, _) {
+              if (didPop) return;
+              setState(() {
+                _selectedModule = null;
+                _recordSearchController.clear();
+                _recordSearch = '';
+                _activeArchivedFilter = 0;
+              });
+            },
+            child: _buildAdminRecipientsView(staffProvider),
+          );
+        }
+
+        return Scaffold(
+          body: SafeArea(
+            child: _buildModule(provider, staffProvider, _selectedModule!),
           ),
           floatingActionButton: _buildAdminFab(),
         );
@@ -392,77 +629,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   Widget? _buildAdminFab() {
-    if (_selectedModule == AdminModule.donors) {
-      return FloatingActionButton.extended(
-        backgroundColor: AppColors.primaryNavy,
-        foregroundColor: Colors.white,
-        onPressed: _openDonorDialog,
-        icon: const Icon(Icons.add),
-        label: const Text('New Donor'),
-      );
-    }
-    if (_selectedModule == AdminModule.recipients) {
-      return FloatingActionButton.extended(
-        backgroundColor: AppColors.primaryNavy,
-        foregroundColor: Colors.white,
-        onPressed: _openPatientDialog,
-        icon: const Icon(Icons.add),
-        label: const Text('New Recipient'),
-      );
-    }
     return null;
-  }
-
-  Widget _buildHome(AdminProvider provider, StaffProvider staffProvider) {
-    return RefreshIndicator(
-      onRefresh: provider.refresh,
-      color: AppColors.primaryBlue,
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
-        children: [
-          Text(
-            'Good day, Admin',
-            style: Theme.of(context)
-                .textTheme
-                .headlineSmall
-                ?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-          const Text('Pasig City Human Milk Bank administration'),
-          const SizedBox(height: 20),
-          if (provider.status == AdminLoadStatus.error)
-            Card(
-              color: AppColors.errorBg,
-              child: ListTile(
-                leading:
-                    const Icon(Icons.error_outline, color: AppColors.error),
-                title: const Text('Dashboard data unavailable'),
-                subtitle: Text(provider.errorMessage ?? 'Try again later.'),
-              ),
-            ),
-          GridView.count(
-            crossAxisCount: 2,
-            crossAxisSpacing: 14,
-            mainAxisSpacing: 14,
-            childAspectRatio: .98,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            children: AdminModule.values.map((module) {
-              final records = module == AdminModule.donors
-                  ? staffProvider.activeDonors
-                  : module == AdminModule.recipients
-                      ? staffProvider.activePatients
-                      : provider.data.recordsFor(module);
-              return AdminModuleCard(
-                module: module,
-                count: records.isEmpty ? null : records.length,
-                onTap: () => _selectModule(module),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildModule(
@@ -471,7 +638,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     AdminModule module,
   ) {
     if (module == AdminModule.schedules) {
-      return const SchedulesScreen();
+      return SchedulesScreen(
+        onBack: () {
+          setState(() => _selectedModule = null);
+          _loadAdminData();
+        },
+      );
     }
     if (module == AdminModule.inventory) {
       return const InventoryScreen();
@@ -480,16 +652,28 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       return const AccountManagementScreen();
     }
     if (module == AdminModule.content) {
-      return const ContentManagementScreen();
+      return ContentManagementScreen(
+        onBack: () {
+          setState(() => _selectedModule = null);
+          _loadAdminData();
+        },
+      );
     }
     if (module == AdminModule.requests) {
-      return const MilkRequestsScreen();
+      return MilkRequestsScreen(
+        onBack: () {
+          setState(() => _selectedModule = null);
+          _loadAdminData();
+        },
+      );
     }
     if (module == AdminModule.metrics) {
-      return const MetricsDashboardScreen();
-    }
-    if (module == AdminModule.donors || module == AdminModule.recipients) {
-      return _buildStaffRecordsModule(staffProvider, module);
+      return MetricsDashboardScreen(
+        onBack: () {
+          setState(() => _selectedModule = null);
+          _loadAdminData();
+        },
+      );
     }
 
     final records = provider.data.recordsFor(module);
@@ -517,218 +701,226 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  Widget _buildStaffRecordsModule(
-      StaffProvider staffProvider, AdminModule module) {
-    final isDonors = module == AdminModule.donors;
-    final active =
-        isDonors ? staffProvider.activeDonors : staffProvider.activePatients;
-    final archived = isDonors
-        ? staffProvider.archivedDonors
-        : staffProvider.archivedPatients;
-    final query = _recordSearch.toLowerCase();
-    final activeRecords = _filterStaffRecords(active, query);
-    final archivedRecords = _filterStaffRecords(archived, query);
-
-    return Column(
-      children: [
-        _buildModuleHeader(module),
-        Container(
-          color: Colors.white,
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: TextField(
-            controller: _recordSearchController,
-            onChanged: (value) => setState(() => _recordSearch = value.trim()),
-            decoration: InputDecoration(
-              hintText: 'Search ${isDonors ? 'donors' : 'recipients'}...',
-              prefixIcon:
-                  const Icon(Icons.search, color: AppColors.textSecondary),
-              suffixIcon: _recordSearch.isEmpty
-                  ? null
-                  : IconButton(
-                      onPressed: () {
-                        _recordSearchController.clear();
-                        setState(() => _recordSearch = '');
-                      },
-                      icon: const Icon(Icons.clear),
-                    ),
-              filled: true,
-              fillColor: AppColors.background,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.border),
-              ),
-            ),
-          ),
-        ),
-        Expanded(
-          child: DefaultTabController(
-            length: 2,
-            child: Column(
-              children: [
-                const Material(
-                  color: Colors.white,
-                  child: TabBar(
-                    labelColor: AppColors.primaryNavy,
-                    indicatorColor: AppColors.primaryBlue,
-                    tabs: [
-                      Tab(text: 'Active Records'),
-                      Tab(text: 'Archived Records'),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: TabBarView(
-                    children: [
-                      _buildStaffRecordList(
-                        activeRecords,
-                        isDonors,
-                        isArchived: false,
-                      ),
-                      _buildStaffRecordList(
-                        archivedRecords,
-                        isDonors,
-                        isArchived: true,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildModuleHeader(AdminModule module) {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(4, 8, 16, 8),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => setState(() => _selectedModule = null),
-            icon: const Icon(Icons.arrow_back, color: AppColors.primaryNavy),
-          ),
-          Text(
-            module.label,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  List<dynamic> _filterStaffRecords(List<dynamic> records, String query) {
-    if (query.isEmpty) return records;
-    return records.where((record) {
-      final values = record is DonorModel
-          ? [
-              record.displayName,
-              record.donorType,
-              record.contactNumber ?? '',
-              record.homeAddress.brgy,
-            ]
-          : [
-              (record as PatientModel).name,
-              record.motherName,
-              record.patientType,
-              record.phone,
-            ];
-      return values.any((value) => value.toLowerCase().contains(query));
+  List<dynamic> _filterStaffRecords(List<dynamic> source, String query) {
+    if (query.isEmpty) return source;
+    final q = query.toLowerCase();
+    return source.where((record) {
+      if (record is DonorModel) {
+        return record.displayName.toLowerCase().contains(q) ||
+            record.donorType.toLowerCase().contains(q) ||
+            (record.contactNumber?.toLowerCase().contains(q) ?? false) ||
+            record.homeAddress.brgy.toLowerCase().contains(q);
+      } else if (record is PatientModel) {
+        return record.name.toLowerCase().contains(q) ||
+            record.motherName.toLowerCase().contains(q) ||
+            record.patientType.toLowerCase().contains(q) ||
+            record.phone.toLowerCase().contains(q);
+      }
+      return true;
     }).toList();
   }
 
-  Widget _buildStaffRecordList(
-    List<dynamic> records,
-    bool isDonors, {
-    required bool isArchived,
-  }) {
-    if (records.isEmpty) {
-      return Center(
-        child: Text(
-          'No ${isDonors ? 'donor' : 'recipient'} records found.',
-          style: const TextStyle(color: AppColors.textSecondary),
-        ),
-      );
-    }
+  Widget _buildAdminDonorsView(StaffProvider staffProvider) {
+    final isArchived = _activeArchivedFilter == 1;
+    final source =
+        isArchived ? staffProvider.archivedDonors : staffProvider.activeDonors;
+    final list = _filterStaffRecords(source, _recordSearch);
 
-    return ListView.builder(
-      padding: const EdgeInsets.only(top: 8, bottom: 24),
-      itemCount: records.length,
-      itemBuilder: (context, index) {
-        final record = records[index];
-        if (isDonors) {
-          final donor = record as DonorModel;
-          return StackedDataCard(
-            title: donor.displayName,
-            subtitle: 'Registered ${_formatDate(donor.createdAt)}',
-            isArchived: isArchived,
-            statusBadge: _statusBadge(donor.eligibility),
-            fields: [
-              DataFieldItem(label: 'Donor Type', value: donor.donorType),
-              DataFieldItem(
-                label: 'Contact Number',
-                value: donor.contactNumber ?? '—',
-              ),
-              DataFieldItem(
-                label: 'Barangay',
-                value: donor.homeAddress.brgy,
-              ),
-              DataFieldItem(
-                label: 'Children',
-                value: donor.children.isEmpty
-                    ? 'None listed'
-                    : donor.children.map((child) => child.name).join(', '),
-              ),
-            ],
-            onEdit: isArchived ? null : () => _openDonorDialog(donor: donor),
-            onUpdateStatus:
-                isArchived ? null : () => _openDonorStatusDialog(donor),
-            statusActionLabel: 'Edit donor status',
-            onArchive: isArchived ? null : () => _archiveDonor(donor),
-            onRestore: isArchived ? () => _restoreDonor(donor) : null,
-            onDelete: () => _deleteDonor(donor),
-          );
-        }
-
-        final patient = record as PatientModel;
-        return StackedDataCard(
-          title: patient.name,
-          subtitle: 'Admitted ${_formatDate(patient.admissionDate)}',
+    return RecordsListScaffold(
+      title: 'Donor Records',
+      onBack: () => setState(() {
+        _selectedModule = null;
+        _recordSearchController.clear();
+        _recordSearch = '';
+        _activeArchivedFilter = 0;
+      }),
+      onRefresh: _handleRefresh,
+      searchController: _recordSearchController,
+      searchQuery: _recordSearch,
+      onSearchChanged: (val) => setState(() => _recordSearch = val.trim()),
+      searchHint: 'Search records...',
+      activeCount: staffProvider.activeDonors.length,
+      archivedCount: staffProvider.archivedDonors.length,
+      selectedFilter: _activeArchivedFilter,
+      onFilterChanged: (filter) =>
+          setState(() => _activeArchivedFilter = filter),
+      isLoading: staffProvider.status == StaffLoadingStatus.loading &&
+          staffProvider.activeDonors.isEmpty &&
+          staffProvider.archivedDonors.isEmpty,
+      errorMessage: staffProvider.status == StaffLoadingStatus.error
+          ? staffProvider.errorMessage
+          : null,
+      fabLabel: 'New Donor',
+      onFabPressed: () => _openDonorDialog(),
+      itemCount: list.length,
+      itemBuilder: (context, idx) {
+        final donor = list[idx] as DonorModel;
+        return RecordCard(
+          title: donor.displayName,
+          statusChipText: donor.donorType,
           isArchived: isArchived,
-          statusBadge: _statusBadge(patient.patientType),
-          fields: [
-            DataFieldItem(label: 'Patient Type', value: patient.patientType),
-            DataFieldItem(label: "Mother's Name", value: patient.motherName),
-            DataFieldItem(label: 'Phone', value: patient.phone),
-            DataFieldItem(label: 'Gestational Age', value: patient.aog ?? '—'),
-            DataFieldItem(label: 'Barangay', value: patient.homeAddress.brgy),
+          infoLines: [
+            RecordInfoLine(
+              icon: Icons.calendar_today_outlined,
+              text: donor.isDeleted
+                  ? 'Archived on ${_formatDate(donor.deletedAt)}'
+                  : 'Registered ${_formatDate(donor.createdAt)}',
+            ),
+            RecordInfoLine(
+              icon: Icons.person_outline,
+              text: donor.donorType,
+            ),
+            RecordInfoLine(
+              icon: Icons.phone_outlined,
+              text: donor.contactNumber ?? '—',
+            ),
           ],
-          onEdit:
-              isArchived ? null : () => _openPatientDialog(patient: patient),
-          onUpdateStatus:
-              isArchived ? null : () => _openPatientStatusDialog(patient),
-          statusActionLabel: 'Edit recipient status',
-          onArchive: isArchived ? null : () => _archivePatient(patient),
-          onRestore: isArchived ? () => _restorePatient(patient) : null,
-          onDelete: () => _deletePatient(patient),
+          extraChips: [
+            _buildClaimBadge(donor.isClaimed),
+            _buildEligibilityBadge(donor.eligibility),
+          ],
+          detailFields: [
+            RecordDetailField(
+                label: 'Eligibility Status', value: donor.eligibility),
+            RecordDetailField(
+              label: 'Claim Status',
+              value: donor.claimStatus,
+              valueColor:
+                  donor.isClaimed ? AppColors.success : AppColors.warning,
+            ),
+            RecordDetailField(
+                label: 'Home Address', value: donor.homeAddress.fullAddress),
+            RecordDetailField(
+                label: 'Birthday', value: _formatDate(donor.birthday)),
+            RecordDetailField(
+                label: 'Occupation', value: donor.occupation ?? '—'),
+            RecordDetailField(
+                label: 'Responsible Staff',
+                value: donor.staffName ?? 'MilkLink Staff'),
+            RecordDetailField(
+                label: 'Verified Profile',
+                value: donor.verified ? 'Yes (Verified)' : 'No (Pending)'),
+            RecordDetailField(
+              label: 'Baby / Children',
+              value: donor.children.isNotEmpty
+                  ? donor.children.map((c) => c.name).join(', ')
+                  : 'None listed',
+            ),
+          ],
+          onKeyAction: donor.isDeleted || donor.isClaimed
+              ? null
+              : () => _generateDonorClaimToken(donor),
+          keyActionTooltip: 'Generate Claim Token',
+          onChecklistAction:
+              donor.isDeleted ? null : () => _openDonorStatusDialog(donor),
+          checklistActionTooltip: 'Edit donor status',
+          onEdit: donor.isDeleted ? null : () => _openDonorDialog(donor: donor),
+          onArchive: donor.isDeleted ? null : () => _archiveDonor(donor),
+          onRestore: donor.isDeleted ? () => _restoreDonor(donor) : null,
+          onDelete: () => _deleteDonor(donor),
         );
       },
     );
   }
 
-  Widget _statusBadge(String value) {
-    return Chip(
-      label: Text(value),
-      labelStyle: const TextStyle(fontSize: 11, color: AppColors.primaryNavy),
-      backgroundColor: AppColors.softBlue,
-      visualDensity: VisualDensity.compact,
-      side: BorderSide.none,
+  Widget _buildAdminRecipientsView(StaffProvider staffProvider) {
+    final isArchived = _activeArchivedFilter == 1;
+    final source = isArchived
+        ? staffProvider.archivedPatients
+        : staffProvider.activePatients;
+    final list = _filterStaffRecords(source, _recordSearch);
+
+    return RecordsListScaffold(
+      title: 'Recipient Records',
+      onBack: () => setState(() {
+        _selectedModule = null;
+        _recordSearchController.clear();
+        _recordSearch = '';
+        _activeArchivedFilter = 0;
+      }),
+      onRefresh: _handleRefresh,
+      searchController: _recordSearchController,
+      searchQuery: _recordSearch,
+      onSearchChanged: (val) => setState(() => _recordSearch = val.trim()),
+      searchHint: 'Search records...',
+      activeCount: staffProvider.activePatients.length,
+      archivedCount: staffProvider.archivedPatients.length,
+      selectedFilter: _activeArchivedFilter,
+      onFilterChanged: (filter) =>
+          setState(() => _activeArchivedFilter = filter),
+      isLoading: staffProvider.status == StaffLoadingStatus.loading &&
+          staffProvider.activePatients.isEmpty &&
+          staffProvider.archivedPatients.isEmpty,
+      errorMessage: staffProvider.status == StaffLoadingStatus.error
+          ? staffProvider.errorMessage
+          : null,
+      fabLabel: 'New Recipient',
+      onFabPressed: () => _openPatientDialog(),
+      itemCount: list.length,
+      itemBuilder: (context, idx) {
+        final patient = list[idx] as PatientModel;
+        return RecordCard(
+          title: patient.name,
+          statusChipText: patient.patientType,
+          isArchived: isArchived,
+          infoLines: [
+            RecordInfoLine(
+              icon: Icons.calendar_today_outlined,
+              text: patient.isDeleted
+                  ? 'Archived on ${_formatDate(patient.deletedAt)}'
+                  : 'Admitted on ${_formatDate(patient.admissionDate)}',
+            ),
+            RecordInfoLine(
+              icon: Icons.person_outline,
+              text: patient.motherName.isNotEmpty
+                  ? "Mother: ${patient.motherName}"
+                  : "Mother: —",
+            ),
+            RecordInfoLine(
+              icon: Icons.phone_outlined,
+              text: patient.phone.isNotEmpty ? patient.phone : '—',
+            ),
+          ],
+          extraChips: [
+            _buildClaimBadge(patient.isClaimed),
+          ],
+          detailFields: [
+            RecordDetailField(
+                label: 'Patient Type', value: patient.patientType),
+            RecordDetailField(
+                label: "Mother's Name", value: patient.motherName),
+            RecordDetailField(label: 'Contact Phone', value: patient.phone),
+            RecordDetailField(
+              label: 'Claim Status',
+              value: patient.claimStatus,
+              valueColor:
+                  patient.isClaimed ? AppColors.success : AppColors.warning,
+            ),
+            RecordDetailField(
+                label: 'Home Address', value: patient.homeAddress.fullAddress),
+            RecordDetailField(label: 'Age', value: '${patient.age} days old'),
+            RecordDetailField(
+                label: 'AOG (Weeks)', value: '${patient.aog} weeks'),
+            RecordDetailField(
+                label: 'Admission Date',
+                value: _formatDate(patient.admissionDate)),
+            RecordDetailField(
+                label: 'Assigned Staff',
+                value: patient.staffName ?? 'MilkLink Staff'),
+          ],
+          onKeyAction: patient.isDeleted || patient.isClaimed
+              ? null
+              : () => _generatePatientClaimToken(patient),
+          keyActionTooltip: 'Generate Claim Token',
+          onEdit:
+              patient.isDeleted ? null : () => _openPatientDialog(patient: patient),
+          onArchive:
+              patient.isDeleted ? null : () => _archivePatient(patient),
+          onRestore:
+              patient.isDeleted ? () => _restorePatient(patient) : null,
+          onDelete: () => _deletePatient(patient),
+        );
+      },
     );
   }
 
@@ -797,37 +989,5 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   String _formatDate(DateTime? date) {
     return date == null ? '—' : DateFormat('MMM dd, yyyy').format(date);
-  }
-
-  Drawer _buildDrawer() {
-    return Drawer(
-      child: SafeArea(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: AppColors.primaryNavy),
-              child: Text(
-                'MilkLink Admin',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            for (final module in AdminModule.values)
-              ListTile(
-                leading: Icon(module.icon, color: AppColors.primaryBlue),
-                title: Text(module.label),
-                onTap: () {
-                  Navigator.pop(context);
-                  _selectModule(module);
-                },
-              ),
-          ],
-        ),
-      ),
-    );
   }
 }

@@ -7,7 +7,7 @@ class ChatbotService {
   static String getDonationSteps() {
     return "Thank you for your interest in donating breast milk to Pasig City Human Milk Bank!\n\n"
         "Here's how you can start:\n\n"
-        "1. Complete the donor registration form (DEDE1 workflow).\n"
+        "1. Complete the donor registration form (workflow).\n"
         "2. Answer the required medical screening questionnaire.\n"
         "3. Submit the required laboratory documents (CBC, HIV, HBsAg, Anti-HCV).\n"
         "4. Wait for screening and verification by authorized healthcare personnel.\n"
@@ -75,7 +75,7 @@ class ChatbotService {
 
     if (lower.contains('lab') || lower.contains('cbc') || lower.contains('hiv') || lower.contains('screening')) {
       return {
-        'text': "The standard DEDE1 donor screening requires:\n\n"
+        'text': "The standard donor screening requires:\n\n"
             "• Complete Blood Count (CBC)\n"
             "• HIV Screening\n"
             "• Hepatitis B Surface Antigen (HBsAg)\n"

@@ -8,8 +8,9 @@ import 'request_form_screen.dart';
 
 class MilkRequestsScreen extends StatefulWidget {
   final String? initialStatus;
+  final VoidCallback? onBack;
 
-  const MilkRequestsScreen({super.key, this.initialStatus});
+  const MilkRequestsScreen({super.key, this.initialStatus, this.onBack});
 
   @override
   State<MilkRequestsScreen> createState() => _MilkRequestsScreenState();
@@ -225,6 +226,14 @@ class _MilkRequestsScreenState extends State<MilkRequestsScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Milk Requests'),
+        leading: widget.onBack != null
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                tooltip: 'Back',
+                onPressed: widget.onBack,
+              )
+            : null,
+        automaticallyImplyLeading: widget.onBack == null,
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,

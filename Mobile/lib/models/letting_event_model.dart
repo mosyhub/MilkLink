@@ -11,14 +11,33 @@ class EventVenue {
     required this.city,
   });
 
-  String get fullAddress => '$name, $street, Brgy. $barangay, $city';
+  String get fullAddress {
+    if (street.isEmpty && barangay.isEmpty) return name;
+    return '$name, $street, Brgy. $barangay, $city'.replaceAll(RegExp(r',\s*,'), ',').trim();
+  }
 
-  factory EventVenue.fromJson(Map<String, dynamic> json) {
+  factory EventVenue.fromJson(dynamic json) {
+    if (json is String) {
+      return EventVenue(
+        name: json,
+        street: '',
+        barangay: '',
+        city: 'Pasig City',
+      );
+    }
+    if (json is Map<String, dynamic>) {
+      return EventVenue(
+        name: json['name'] ?? 'Pasig City Human Milk Bank',
+        street: json['street'] ?? '',
+        barangay: json['barangay'] ?? '',
+        city: json['city'] ?? 'Pasig City',
+      );
+    }
     return EventVenue(
-      name: json['name'] ?? 'Pasig City Human Milk Bank',
-      street: json['street'] ?? '',
-      barangay: json['barangay'] ?? '',
-      city: json['city'] ?? 'Pasig City',
+      name: 'Pasig City Human Milk Bank',
+      street: '',
+      barangay: '',
+      city: 'Pasig City',
     );
   }
 }
@@ -73,9 +92,7 @@ class LettingEventModel {
       details: json['actDetails'] is Map<String, dynamic>
           ? EventDetails.fromJson(json['actDetails'])
           : EventDetails(date: DateTime.now(), time: EventTime(start: '', end: '')),
-      venue: json['venue'] is Map<String, dynamic>
-          ? EventVenue.fromJson(json['venue'])
-          : EventVenue(name: 'Pasig City Milk Bank', street: '', barangay: '', city: ''),
+      venue: EventVenue.fromJson(json['venue']),
     );
   }
 }

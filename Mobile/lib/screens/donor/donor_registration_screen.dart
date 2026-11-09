@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../providers/donor_provider.dart';
+import '../../widgets/app_widgets.dart';
 import '../../widgets/custom_text_field.dart';
 import 'returning_donor_search_screen.dart';
 
@@ -36,7 +37,7 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
   final _breastfeedingInfoController = TextEditingController();
   DateTime? _childBirthday;
 
-  // Screening questions (DEDE1 Initial)
+  // Screening questions (Initial)
   final Map<String, String> _questionnaire = {
     "Have you donated breast milk before? (Nakapagbigay ka na ba ng gatas dati?)": "No",
     "Did you have normal pregnancy and delivery? (Normal ba ang panganganak mo?)": "Yes",
@@ -119,12 +120,12 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.softPink,
+                  color: AppColors.softBlue,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.badge, color: AppColors.accentPink),
+                    const Icon(Icons.badge, color: AppColors.primaryBlue),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -175,11 +176,9 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('DEDE1 Donor Registration'),
-        backgroundColor: Colors.white,
-        elevation: 0,
+      backgroundColor: AppColors.pageBackground,
+      appBar: AppTopBar(
+        title: 'Donor Registration',
         actions: [
           TextButton.icon(
             onPressed: () {
@@ -188,10 +187,10 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
                 MaterialPageRoute(builder: (_) => const ReturningDonorSearchScreen()),
               );
             },
-            icon: const Icon(Icons.repeat, size: 18, color: AppColors.accentPink),
+            icon: const Icon(Icons.repeat, size: 18, color: AppColors.primaryBlue),
             label: const Text(
               'Returning?',
-              style: TextStyle(color: AppColors.accentPink, fontWeight: FontWeight.bold),
+              style: TextStyle(color: AppColors.primaryBlue, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -236,7 +235,7 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Step 1: First-Time Donor Information (DEDE1)',
+                    'Step 1: First-Time Donor Information',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   const SizedBox(height: 6),
@@ -277,7 +276,7 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
                           : 'DOB: ${DateFormat('MMMM dd, yyyy').format(_birthday!)}',
                       style: const TextStyle(fontWeight: FontWeight.w500),
                     ),
-                    trailing: const Icon(Icons.calendar_today, color: AppColors.accentPink),
+                    trailing: const Icon(Icons.calendar_today, color: AppColors.primaryBlue),
                     onTap: () async {
                       final picked = await showDatePicker(
                         context: context,
@@ -356,7 +355,7 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
                           ? 'Select Infant Date of Birth (Optional)'
                           : 'Child DOB: ${DateFormat('MMMM dd, yyyy').format(_childBirthday!)}',
                     ),
-                    trailing: const Icon(Icons.cake, color: AppColors.accentPink),
+                    trailing: const Icon(Icons.cake, color: AppColors.primaryBlue),
                     onTap: () async {
                       final picked = await showDatePicker(
                         context: context,
@@ -391,7 +390,7 @@ class _DonorRegistrationScreenState extends State<DonorRegistrationScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Step 3: Initial DEDE1 Questionnaire & Confirmation',
+                  'Step 3: Initial Questionnaire & Confirmation',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const SizedBox(height: 12),

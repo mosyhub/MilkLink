@@ -14,8 +14,8 @@ class UserAvatar extends StatelessWidget {
     this.avatarUrl,
     this.initial,
     this.radius = 20,
-    this.backgroundColor = AppColors.softPink,
-    this.textColor = AppColors.accentPink,
+    this.backgroundColor = AppColors.softBlue,
+    this.textColor = AppColors.primaryBlue,
   }) : super(key: key);
 
   ImageProvider? _resolveImageProvider(String? url) {

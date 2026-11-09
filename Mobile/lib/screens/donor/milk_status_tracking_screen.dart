@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/donor_model.dart';
+import '../../widgets/app_widgets.dart';
 
 class MilkStatusTrackingScreen extends StatelessWidget {
   final DonationRecord? donation;
@@ -30,12 +31,8 @@ class MilkStatusTrackingScreen extends StatelessWidget {
     final currentIdx = _getCurrentStageIndex();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Milk Processing Progress'),
-        backgroundColor: Colors.white,
-        elevation: 0,
-      ),
+      backgroundColor: AppColors.pageBackground,
+      appBar: AppTopBar(title: 'Milk Processing Progress'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -61,13 +58,13 @@ class MilkStatusTrackingScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: AppColors.softPink,
+                          color: AppColors.softBlue,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
                           donation != null ? '${donation!.totalVolume.toStringAsFixed(0)} mL' : 'Sample / Active Batch',
                           style: const TextStyle(
-                            color: AppColors.accentPink,
+                            color: AppColors.primaryBlue,
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
                           ),
@@ -109,7 +106,7 @@ class MilkStatusTrackingScreen extends StatelessWidget {
                         height: 28,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: isPassed ? AppColors.accentPink : Colors.grey.shade200,
+                          color: isPassed ? AppColors.primaryBlue : Colors.grey.shade200,
                           border: isCurrent
                               ? Border.all(color: AppColors.primaryNavy, width: 2)
                               : null,
@@ -124,7 +121,7 @@ class MilkStatusTrackingScreen extends StatelessWidget {
                         Container(
                           width: 2,
                           height: 40,
-                          color: i < currentIdx ? AppColors.accentPink : Colors.grey.shade300,
+                          color: i < currentIdx ? AppColors.primaryBlue : Colors.grey.shade300,
                         ),
                     ],
                   ),

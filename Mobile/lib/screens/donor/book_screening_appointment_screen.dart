@@ -87,7 +87,7 @@ class _BookScreeningAppointmentScreenState extends State<BookScreeningAppointmen
         return Theme(
           data: ThemeData.light().copyWith(
             colorScheme: const ColorScheme.light(
-              primary: AppColors.accentPink,
+              primary: AppColors.primaryBlue,
               onPrimary: Colors.white,
               onSurface: AppColors.textPrimary,
             ),
@@ -204,7 +204,7 @@ class _BookScreeningAppointmentScreenState extends State<BookScreeningAppointmen
         foregroundColor: AppColors.textPrimary,
         elevation: 0.5,
       ),
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -307,7 +307,7 @@ class _BookScreeningAppointmentScreenState extends State<BookScreeningAppointmen
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.calendar_today, color: AppColors.accentPink, size: 20),
+                        const Icon(Icons.calendar_today, color: AppColors.primaryBlue, size: 20),
                         const SizedBox(width: 10),
                         Text(
                           dateDisplay,
@@ -315,7 +315,7 @@ class _BookScreeningAppointmentScreenState extends State<BookScreeningAppointmen
                         ),
                       ],
                     ),
-                    const Text('Change Date', style: TextStyle(color: AppColors.accentPink, fontWeight: FontWeight.bold, fontSize: 13)),
+                    const Text('Change Date', style: TextStyle(color: AppColors.primaryBlue, fontWeight: FontWeight.bold, fontSize: 13)),
                   ],
                 ),
               ),
@@ -374,12 +374,12 @@ class _BookScreeningAppointmentScreenState extends State<BookScreeningAppointmen
                         color: !s.isAvailable
                             ? Colors.grey.shade100
                             : isSelected
-                                ? AppColors.accentPink.withValues(alpha: 0.12)
+                                ? AppColors.primaryBlue.withValues(alpha: 0.12)
                                 : Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isSelected
-                              ? AppColors.accentPink
+                              ? AppColors.primaryBlue
                               : !s.isAvailable
                                   ? Colors.grey.shade300
                                   : AppColors.border,

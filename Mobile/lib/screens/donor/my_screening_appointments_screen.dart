@@ -130,10 +130,10 @@ class _MyScreeningAppointmentsScreenState extends State<MyScreeningAppointmentsS
           ),
         ],
       ),
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       floatingActionButton: _activeAppointment == null
           ? FloatingActionButton.extended(
-              backgroundColor: AppColors.accentPink,
+              backgroundColor: AppColors.primaryBlue,
               foregroundColor: Colors.white,
               icon: const Icon(Icons.add),
               label: const Text('Book Screening'),
@@ -218,7 +218,7 @@ class _MyScreeningAppointmentsScreenState extends State<MyScreeningAppointmentsS
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.accentPink.withValues(alpha: 0.3), width: 1.5),
+        border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.3), width: 1.5),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -236,12 +236,12 @@ class _MyScreeningAppointmentsScreenState extends State<MyScreeningAppointmentsS
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.softPink,
+                  color: AppColors.softBlue,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   apt.appointmentId,
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.accentPink, fontSize: 13),
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryBlue, fontSize: 13),
                 ),
               ),
               Container(
@@ -331,12 +331,16 @@ class _MyScreeningAppointmentsScreenState extends State<MyScreeningAppointmentsS
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '${apt.appointmentDate.year}-${apt.appointmentDate.month.toString().padLeft(2, '0')}-${apt.appointmentDate.day.toString().padLeft(2, '0')} • ${apt.timeSlot}',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
+              Expanded(
+                child: Text(
+                  '${apt.appointmentDate.year}-${apt.appointmentDate.month.toString().padLeft(2, '0')}-${apt.appointmentDate.day.toString().padLeft(2, '0')} • ${apt.timeSlot}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(

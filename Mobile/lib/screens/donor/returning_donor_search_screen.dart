@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/donor_model.dart';
 import '../../providers/donor_provider.dart';
+import '../../widgets/app_widgets.dart';
 import '../../widgets/status_badge.dart';
 
 class ReturningDonorSearchScreen extends StatefulWidget {
@@ -47,12 +48,8 @@ class _ReturningDonorSearchScreenState extends State<ReturningDonorSearchScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Returning Donor Lookup'),
-        backgroundColor: Colors.white,
-        elevation: 0,
-      ),
+      backgroundColor: AppColors.pageBackground,
+      appBar: AppTopBar(title: 'Returning Donor Lookup'),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -153,7 +150,7 @@ class _ReturningDonorSearchScreenState extends State<ReturningDonorSearchScreen>
                                     Text(
                                       'Donor ID: ${d.donorId ?? "Assigned upon verification"}',
                                       style: const TextStyle(
-                                        color: AppColors.accentPink,
+                                      color: AppColors.primaryBlue,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -180,7 +177,7 @@ class _ReturningDonorSearchScreenState extends State<ReturningDonorSearchScreen>
                                                   mainAxisSize: MainAxisSize.min,
                                                   crossAxisAlignment: CrossAxisAlignment.start,
                                                   children: [
-                                                    Text('Donor ID: ${d.donorId ?? "DEDE1"}'),
+                                                    Text('Donor ID: ${d.donorId ?? '—'}'),
                                                     const SizedBox(height: 8),
                                                     Text('Eligibility: ${d.eligibility}'),
                                                     const SizedBox(height: 8),
@@ -218,3 +215,4 @@ class _ReturningDonorSearchScreenState extends State<ReturningDonorSearchScreen>
     );
   }
 }
+

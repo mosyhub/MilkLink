@@ -14,6 +14,9 @@ import 'dialogs/donor_form_dialog.dart';
 import 'dialogs/patient_form_dialog.dart';
 import 'dialogs/request_form_dialog.dart';
 import '../profile/edit_profile_screen.dart';
+import '../../widgets/dashboard_grid_scaffold.dart';
+import '../../widgets/record_card.dart';
+import '../../widgets/records_list_scaffold.dart';
 import '../../widgets/stacked_data_card.dart';
 import '../../widgets/user_avatar.dart';
 import 'staff_screening_appointments_screen.dart';
@@ -69,6 +72,18 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
     staffProvider.fetchRequests(isArchived: true);
   }
 
+  Future<void> _loadAllDataAsync() async {
+    final staffProvider = Provider.of<StaffProvider>(context, listen: false);
+    await Future.wait([
+      staffProvider.fetchDonors(isArchived: false),
+      staffProvider.fetchDonors(isArchived: true),
+      staffProvider.fetchPatients(isArchived: false),
+      staffProvider.fetchPatients(isArchived: true),
+      staffProvider.fetchRequests(isArchived: false),
+      staffProvider.fetchRequests(isArchived: true),
+    ]);
+  }
+
   Future<void> _handleRefresh() async {
     final staffProvider = Provider.of<StaffProvider>(context, listen: false);
     final isArchived = _activeArchivedFilter == 1;
@@ -83,7 +98,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
         await staffProvider.fetchRequests(isArchived: isArchived);
         break;
       case null:
-        _loadAllData();
+        await _loadAllDataAsync();
         break;
     }
   }
@@ -140,12 +155,14 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
   }
 
   void _showNotifications() {
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('No new notifications')),
     );
   }
 
   void _showComingSoon(String label) {
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('$label is coming soon')),
     );
@@ -165,9 +182,15 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        content: Text(message, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: SingleChildScrollView(
+            child: Text(message, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+          ),
+        ),
         actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         actions: [
           TextButton(
@@ -183,6 +206,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
               Navigator.pop(ctx);
               final success = await onConfirm();
               if (mounted) {
+                ScaffoldMessenger.of(context).clearSnackBars();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(success ? 'Operation completed successfully' : 'Operation failed'),
@@ -254,7 +278,8 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
         title: Row(
           children: [
             const Icon(Icons.qr_code_2, color: AppColors.primaryBlue),
@@ -262,8 +287,10 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
             Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17))),
           ],
         ),
-        content: SingleChildScrollView(
-          child: Column(
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: SingleChildScrollView(
+            child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
@@ -343,6 +370,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
             ],
           ),
         ),
+      ),
         actions: [
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryNavy),
@@ -398,36 +426,42 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           title: const Text('Review Screening Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Screening Status *', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-              const SizedBox(height: 6),
-              DropdownButtonFormField<String>(
-                initialValue: allowedStatuses.contains(selectedStatus) ? selectedStatus : 'Pending Review',
-                decoration: InputDecoration(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                items: allowedStatuses.map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 13)))).toList(),
-                onChanged: (v) => setDialogState(() => selectedStatus = v!),
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Screening Status *', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 6),
+                  DropdownButtonFormField<String>(
+                    initialValue: allowedStatuses.contains(selectedStatus) ? selectedStatus : 'Pending Review',
+                    decoration: InputDecoration(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    items: allowedStatuses.map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 13)))).toList(),
+                    onChanged: (v) => setDialogState(() => selectedStatus = v!),
+                  ),
+                  const SizedBox(height: 14),
+                  const Text('Review Notes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: notesController,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      hintText: 'Enter clinical observations or laboratory remarks...',
+                      hintStyle: const TextStyle(fontSize: 12),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 14),
-              const Text('Review Notes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-              const SizedBox(height: 6),
-              TextField(
-                controller: notesController,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  hintText: 'Enter clinical observations or laboratory remarks...',
-                  hintStyle: const TextStyle(fontSize: 12),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-            ],
+            ),
           ),
           actions: [
             TextButton(
@@ -444,6 +478,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                   reviewNotes: notesController.text.trim(),
                 );
                 if (mounted) {
+                  ScaffoldMessenger.of(this.context).clearSnackBars();
                   ScaffoldMessenger.of(this.context).showSnackBar(
                     SnackBar(
                       content: Text(ok ? 'Status updated to $selectedStatus' : 'Update failed'),
@@ -706,17 +741,8 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      automaticallyImplyLeading: _section != null,
-      leading: _section == null
-          ? Builder(
-              builder: (ctx) => IconButton(
-                icon: const Icon(Icons.menu, color: Colors.white),
-                tooltip: 'Navigation Menu',
-                onPressed: () => Scaffold.of(ctx).openDrawer(),
-              ),
-            )
-          : null,
-      backgroundColor: AppColors.accentPink,
+      automaticallyImplyLeading: true,
+      backgroundColor: AppColors.primaryNavy,
       foregroundColor: Colors.white,
       elevation: 0,
       titleSpacing: 16,
@@ -725,7 +751,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
           Container(
             padding: const EdgeInsets.all(6),
             decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-            child: const Icon(Icons.volunteer_activism, color: AppColors.accentPink, size: 20),
+            child: const Icon(Icons.volunteer_activism, color: AppColors.primaryNavy, size: 20),
           ),
           const SizedBox(width: 10),
           const Column(
@@ -801,177 +827,198 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // DASHBOARD HOME (card grid)
+  // RECORD LISTS & CARDS
   // ───────────────────────────────────────────────────────────────────────────
 
-  Widget _buildDashboardCard({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-    int? count,
-  }) {
-    return Material(
-      color: AppColors.accentPink,
-      borderRadius: BorderRadius.circular(24),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(24),
-        onTap: onTap,
-        child: Stack(
-          children: [
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(icon, size: 54, color: Colors.white),
-                  const SizedBox(height: 14),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Text(
-                      label,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (count != null)
-              Positioned(
-                top: 12,
-                right: 14,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.25),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '$count',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-          ],
+  Widget _buildEligibilityBadge(String eligibility) {
+    Color fg = AppColors.primaryNavy;
+    if (eligibility.toLowerCase() == 'eligible') {
+      fg = AppColors.success;
+    } else if (eligibility.toLowerCase() == 'not eligible' ||
+        eligibility.toLowerCase() == 'ineligible') {
+      fg = AppColors.error;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: AppColors.softBlue,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        eligibility,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: fg,
         ),
       ),
     );
   }
 
-  Widget _buildDashboardHome(StaffProvider staffProvider) {
-    return RefreshIndicator(
-      color: AppColors.accentPink,
-      onRefresh: () async => _loadAllData(),
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
-        children: [
-          const Center(
-            child: Text(
-              'Dashboard',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 1.08,
-            children: [
-              _buildDashboardCard(
-                icon: Icons.favorite,
-                label: 'Donor Records',
-                count: staffProvider.activeDonors.length,
-                onTap: () => _openSection(StaffSection.donors),
-              ),
-              _buildDashboardCard(
-                icon: Icons.child_care,
-                label: 'Recipient Records',
-                count: staffProvider.activePatients.length,
-                onTap: () => _openSection(StaffSection.recipients),
-              ),
-              _buildDashboardCard(
-                icon: Icons.assignment,
-                label: 'Milk Requests',
-                count: staffProvider.activeRequests.length,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const MilkRequestsScreen()),
-                  );
-                },
-              ),
-              _buildDashboardCard(
-                icon: Icons.person_search,
-                label: 'Pending Online Registrations',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const PendingRegistrationsScreen()),
-                  );
-                },
-              ),
-              _buildDashboardCard(
-                icon: Icons.calendar_month,
-                label: 'Screening Clinic',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const StaffScreeningAppointmentsScreen()),
-                  );
-                },
-              ),
-              _buildDashboardCard(
-                icon: Icons.event_note,
-                label: 'Schedules',
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const SchedulesScreen(),
-                  ),
-                ),
-              ),
-              _buildDashboardCard(
-                icon: Icons.inventory_2_outlined,
-                label: 'Milk Bank Inventory',
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const InventoryScreen(),
-                  ),
-                ),
-              ),
-              _buildDashboardCard(
-                icon: Icons.bar_chart,
-                label: 'Metrics',
-                onTap: () => _showComingSoon('Metrics'),
-              ),
-            ],
-          ),
-        ],
-      ),
+  Widget _buildDonorCard(DonorModel donor, bool isArchived) {
+    return RecordCard(
+      title: donor.displayName,
+      statusChipText: donor.donorType,
+      isArchived: isArchived,
+      infoLines: [
+        RecordInfoLine(
+          icon: Icons.calendar_today_outlined,
+          text: donor.isDeleted
+              ? 'Archived on ${_formatDate(donor.deletedAt)}'
+              : 'Registered ${_formatDate(donor.createdAt)}',
+        ),
+        RecordInfoLine(
+          icon: Icons.person_outline,
+          text: donor.donorType,
+        ),
+        RecordInfoLine(
+          icon: Icons.phone_outlined,
+          text: donor.contactNumber ?? '—',
+        ),
+      ],
+      extraChips: [
+        _buildClaimBadge(donor.isClaimed),
+        _buildEligibilityBadge(donor.eligibility),
+      ],
+      detailFields: [
+        RecordDetailField(label: 'Eligibility Status', value: donor.eligibility),
+        RecordDetailField(
+          label: 'Claim Status',
+          value: donor.claimStatus,
+          valueColor: donor.isClaimed ? AppColors.success : AppColors.warning,
+        ),
+        RecordDetailField(label: 'Home Address', value: donor.homeAddress.fullAddress),
+        RecordDetailField(label: 'Birthday', value: _formatDate(donor.birthday)),
+        RecordDetailField(label: 'Occupation', value: donor.occupation ?? '—'),
+        RecordDetailField(label: 'Responsible Staff', value: donor.staffName ?? 'MilkLink Staff'),
+        RecordDetailField(label: 'Verified Profile', value: donor.verified ? 'Yes (Verified)' : 'No (Pending)'),
+        RecordDetailField(
+          label: 'Baby / Children',
+          value: donor.children.isNotEmpty
+              ? donor.children.map((c) {
+                  final ageStr = c.ageValue != null ? ' (${c.ageValue} ${c.ageUnit ?? 'weeks'})' : '';
+                  return '${c.name}$ageStr';
+                }).join(', ')
+              : 'None listed',
+        ),
+      ],
+      onKeyAction: donor.isDeleted || donor.isClaimed ? null : () => _generateDonorClaimToken(donor),
+      keyActionTooltip: 'Generate Claim Token',
+      onChecklistAction: donor.isDeleted ? null : () => _openUpdateScreeningDialog(donor),
+      checklistActionTooltip: 'Review Screening Status',
+      onEdit: donor.isDeleted ? null : () => _openDonorDialog(donor: donor),
+      onArchive: donor.isDeleted ? null : () => _archiveDonor(donor),
+      onRestore: donor.isDeleted ? () => _restoreDonor(donor) : null,
+      onDelete: () => _deleteDonorPermanently(donor),
     );
   }
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // RECORD LISTS
-  // ───────────────────────────────────────────────────────────────────────────
+  Widget _buildPatientCard(PatientModel patient, bool isArchived) {
+    return RecordCard(
+      title: patient.name,
+      statusChipText: patient.patientType,
+      isArchived: isArchived,
+      infoLines: [
+        RecordInfoLine(
+          icon: Icons.calendar_today_outlined,
+          text: patient.isDeleted
+              ? 'Archived on ${_formatDate(patient.deletedAt)}'
+              : 'Admitted on ${_formatDate(patient.admissionDate)}',
+        ),
+        RecordInfoLine(
+          icon: Icons.person_outline,
+          text: patient.motherName.isNotEmpty ? "Mother: ${patient.motherName}" : "Mother: —",
+        ),
+        RecordInfoLine(
+          icon: Icons.phone_outlined,
+          text: patient.phone.isNotEmpty ? patient.phone : '—',
+        ),
+      ],
+      extraChips: [
+        _buildClaimBadge(patient.isClaimed),
+      ],
+      detailFields: [
+        RecordDetailField(label: 'Patient Type', value: patient.patientType),
+        RecordDetailField(label: "Mother's Name", value: patient.motherName),
+        RecordDetailField(label: 'Contact Phone', value: patient.phone),
+        RecordDetailField(
+          label: 'Claim Status',
+          value: patient.claimStatus,
+          valueColor: patient.isClaimed ? AppColors.success : AppColors.warning,
+        ),
+        RecordDetailField(label: 'Home Address', value: patient.homeAddress.fullAddress),
+        RecordDetailField(label: 'Age', value: '${patient.age} days old'),
+        RecordDetailField(label: 'AOG (Weeks)', value: '${patient.aog} weeks'),
+        RecordDetailField(label: 'Admission Date', value: _formatDate(patient.admissionDate)),
+        RecordDetailField(label: 'Assigned Staff', value: patient.staffName ?? 'MilkLink Staff'),
+      ],
+      onKeyAction: patient.isDeleted || patient.isClaimed ? null : () => _generatePatientClaimToken(patient),
+      keyActionTooltip: 'Generate Claim Token',
+      onEdit: patient.isDeleted ? null : () => _openPatientDialog(patient: patient),
+      onArchive: patient.isDeleted ? null : () => _archivePatient(patient),
+      onRestore: patient.isDeleted ? () => _restorePatient(patient) : null,
+      onDelete: () => _deletePatientPermanently(patient),
+    );
+  }
 
   Widget _buildDonorsTab(StaffProvider staffProvider) {
+    final isArchived = _activeArchivedFilter == 1;
+    var list = isArchived ? staffProvider.archivedDonors : staffProvider.activeDonors;
+
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      list = list.where((d) {
+        return d.displayName.toLowerCase().contains(q) ||
+            d.donorType.toLowerCase().contains(q) ||
+            (d.contactNumber?.toLowerCase().contains(q) ?? false) ||
+            d.homeAddress.brgy.toLowerCase().contains(q);
+      }).toList();
+    }
+
+    if (list.isEmpty) {
+      return _buildEmptyState(
+        isArchived ? 'No archived donor records found.' : 'No active donor records found.',
+      );
+    }
+
+    return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
+      itemCount: list.length,
+      itemBuilder: (context, idx) => _buildDonorCard(list[idx], isArchived),
+    );
+  }
+
+  Widget _buildPatientsTab(StaffProvider staffProvider) {
+    final isArchived = _activeArchivedFilter == 1;
+    var list = isArchived ? staffProvider.archivedPatients : staffProvider.activePatients;
+
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      list = list.where((p) {
+        return p.name.toLowerCase().contains(q) ||
+            p.motherName.toLowerCase().contains(q) ||
+            p.patientType.toLowerCase().contains(q) ||
+            p.phone.toLowerCase().contains(q);
+      }).toList();
+    }
+
+    if (list.isEmpty) {
+      return _buildEmptyState(
+        isArchived ? 'No archived recipient records found.' : 'No active recipient records found.',
+      );
+    }
+
+    return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
+      itemCount: list.length,
+      itemBuilder: (context, idx) => _buildPatientCard(list[idx], isArchived),
+    );
+  }
+
+  Widget _buildDonorsView(StaffProvider staffProvider) {
     final isArchived = _activeArchivedFilter == 1;
     var list = isArchived ? staffProvider.archivedDonors : staffProvider.activeDonors;
 
@@ -986,87 +1033,37 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
       }).toList();
     }
 
-    if (list.isEmpty) {
-      return _buildEmptyState(
-        isArchived ? 'No archived donor records found.' : 'No active donor records found.',
-      );
-    }
-
-    return ListView.builder(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.only(top: 10, bottom: 80),
-      itemCount: list.length,
-      itemBuilder: (context, idx) {
-        final donor = list[idx];
-        final donorName = donor.displayName;
-
-        Color badgeBg = AppColors.softBlue;
-        Color badgeFg = AppColors.primaryNavy;
-        if (donor.eligibility.toLowerCase() == 'eligible') {
-          badgeBg = AppColors.success.withValues(alpha: 0.15);
-          badgeFg = AppColors.success;
-        } else if (donor.eligibility.toLowerCase() == 'not eligible' ||
-            donor.eligibility.toLowerCase() == 'ineligible') {
-          badgeBg = AppColors.error.withValues(alpha: 0.15);
-          badgeFg = AppColors.error;
-        }
-
-        return StackedDataCard(
-          title: donorName,
-          subtitle: donor.isDeleted
-              ? 'Archived on ${_formatDate(donor.deletedAt)}'
-              : 'Registered ${_formatDate(donor.createdAt)}',
-          isArchived: donor.isDeleted,
-          statusBadge: Wrap(
-            spacing: 6,
-            runSpacing: 4,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              _buildClaimBadge(donor.isClaimed),
-              _buildStatusBadge(donor.eligibility, bg: badgeBg, fg: badgeFg),
-            ],
-          ),
-          fields: [
-            DataFieldItem(label: 'Donor Type', value: donor.donorType),
-            DataFieldItem(label: 'Contact Number', value: donor.contactNumber ?? '—'),
-            DataFieldItem(
-              label: 'Eligibility Status',
-              value: donor.eligibility,
-              valueColor: badgeFg,
-            ),
-            DataFieldItem(
-              label: 'Claim Status',
-              value: donor.claimStatus,
-              valueColor: donor.isClaimed ? AppColors.success : AppColors.warning,
-            ),
-            DataFieldItem(label: 'Home Address', value: donor.homeAddress.fullAddress),
-            DataFieldItem(label: 'Birthday', value: _formatDate(donor.birthday)),
-            DataFieldItem(label: 'Occupation', value: donor.occupation ?? '—'),
-            DataFieldItem(label: 'Responsible Staff', value: donor.staffName ?? 'MilkLink Staff'),
-            DataFieldItem(label: 'Verified Profile', value: donor.verified ? 'Yes (Verified)' : 'No (Pending)'),
-            DataFieldItem(
-              label: 'Baby / Children',
-              value: donor.children.isNotEmpty
-                  ? donor.children.map((c) {
-                      final ageStr = c.ageValue != null ? ' (${c.ageValue} ${c.ageUnit ?? 'weeks'})' : '';
-                      return '${c.name}$ageStr';
-                    }).join(', ')
-                  : 'None listed',
-            ),
-          ],
-          onEdit: donor.isDeleted ? null : () => _openDonorDialog(donor: donor),
-          onArchive: donor.isDeleted ? null : () => _archiveDonor(donor),
-          onRestore: donor.isDeleted ? () => _restoreDonor(donor) : null,
-          onDelete: () => _deleteDonorPermanently(donor),
-          onGenerateClaimToken: donor.isDeleted || donor.isClaimed ? null : () => _generateDonorClaimToken(donor),
-          onUpdateStatus: donor.isDeleted ? null : () => _openUpdateScreeningDialog(donor),
-          statusActionLabel: 'Review Screening Status',
-        );
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _backToDashboard();
       },
+      child: RecordsListScaffold(
+        title: 'Donor Records',
+        onBack: _backToDashboard,
+        onRefresh: _handleRefresh,
+        searchController: _searchController,
+        searchQuery: _searchQuery,
+        onSearchChanged: (val) => setState(() => _searchQuery = val.trim()),
+        searchHint: 'Search records...',
+        activeCount: staffProvider.activeDonors.length,
+        archivedCount: staffProvider.archivedDonors.length,
+        selectedFilter: _activeArchivedFilter,
+        onFilterChanged: (filter) => setState(() => _activeArchivedFilter = filter),
+        isLoading: staffProvider.status == StaffLoadingStatus.loading &&
+            staffProvider.activeDonors.isEmpty &&
+            staffProvider.archivedDonors.isEmpty,
+        errorMessage: staffProvider.status == StaffLoadingStatus.error ? staffProvider.errorMessage : null,
+        fabLabel: 'New Donor',
+        onFabPressed: () => _openDonorDialog(),
+        itemCount: list.length,
+        itemBuilder: (context, idx) => _buildDonorCard(list[idx], isArchived),
+      ),
     );
   }
 
-  Widget _buildPatientsTab(StaffProvider staffProvider) {
+  Widget _buildRecipientsView(StaffProvider staffProvider) {
     final isArchived = _activeArchivedFilter == 1;
     var list = isArchived ? staffProvider.archivedPatients : staffProvider.activePatients;
 
@@ -1081,60 +1078,33 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
       }).toList();
     }
 
-    if (list.isEmpty) {
-      return _buildEmptyState(
-        isArchived ? 'No archived recipient records found.' : 'No active recipient records found.',
-      );
-    }
-
-    return ListView.builder(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.only(top: 10, bottom: 80),
-      itemCount: list.length,
-      itemBuilder: (context, idx) {
-        final patient = list[idx];
-
-        return StackedDataCard(
-          title: patient.name,
-          subtitle: patient.isDeleted
-              ? 'Archived on ${_formatDate(patient.deletedAt)}'
-              : 'Admitted on ${_formatDate(patient.admissionDate)}',
-          isArchived: patient.isDeleted,
-          statusBadge: Wrap(
-            spacing: 6,
-            runSpacing: 4,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              _buildClaimBadge(patient.isClaimed),
-              _buildStatusBadge(
-                patient.patientType,
-                bg: patient.patientType == 'In-patient' ? AppColors.softBlue : AppColors.softPink,
-                fg: patient.patientType == 'In-patient' ? AppColors.primaryNavy : AppColors.accentPink,
-              ),
-            ],
-          ),
-          fields: [
-            DataFieldItem(label: 'Patient Type', value: patient.patientType),
-            DataFieldItem(label: "Mother's Name", value: patient.motherName),
-            DataFieldItem(label: 'Contact Phone', value: patient.phone),
-            DataFieldItem(
-              label: 'Claim Status',
-              value: patient.claimStatus,
-              valueColor: patient.isClaimed ? AppColors.success : AppColors.warning,
-            ),
-            DataFieldItem(label: 'Home Address', value: patient.homeAddress.fullAddress),
-            DataFieldItem(label: 'Age', value: '${patient.age} days old'),
-            DataFieldItem(label: 'AOG (Weeks)', value: '${patient.aog} weeks'),
-            DataFieldItem(label: 'Admission Date', value: _formatDate(patient.admissionDate)),
-            DataFieldItem(label: 'Assigned Staff', value: patient.staffName ?? 'MilkLink Staff'),
-          ],
-          onEdit: patient.isDeleted ? null : () => _openPatientDialog(patient: patient),
-          onArchive: patient.isDeleted ? null : () => _archivePatient(patient),
-          onRestore: patient.isDeleted ? () => _restorePatient(patient) : null,
-          onDelete: () => _deletePatientPermanently(patient),
-          onGenerateClaimToken: patient.isDeleted || patient.isClaimed ? null : () => _generatePatientClaimToken(patient),
-        );
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _backToDashboard();
       },
+      child: RecordsListScaffold(
+        title: 'Recipient Records',
+        onBack: _backToDashboard,
+        onRefresh: _handleRefresh,
+        searchController: _searchController,
+        searchQuery: _searchQuery,
+        onSearchChanged: (val) => setState(() => _searchQuery = val.trim()),
+        searchHint: 'Search records...',
+        activeCount: staffProvider.activePatients.length,
+        archivedCount: staffProvider.archivedPatients.length,
+        selectedFilter: _activeArchivedFilter,
+        onFilterChanged: (filter) => setState(() => _activeArchivedFilter = filter),
+        isLoading: staffProvider.status == StaffLoadingStatus.loading &&
+            staffProvider.activePatients.isEmpty &&
+            staffProvider.archivedPatients.isEmpty,
+        errorMessage: staffProvider.status == StaffLoadingStatus.error ? staffProvider.errorMessage : null,
+        fabLabel: 'New Recipient',
+        onFabPressed: () => _openPatientDialog(),
+        itemCount: list.length,
+        itemBuilder: (context, idx) => _buildPatientCard(list[idx], isArchived),
+      ),
     );
   }
 
@@ -1332,7 +1302,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
           child: Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.arrow_back, color: AppColors.accentPink),
+                icon: const Icon(Icons.arrow_back, color: AppColors.primaryNavy),
                 tooltip: 'Back to dashboard',
                 onPressed: _backToDashboard,
               ),
@@ -1347,7 +1317,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.refresh, color: AppColors.accentPink),
+                icon: const Icon(Icons.refresh, color: AppColors.primaryNavy),
                 tooltip: 'Refresh',
                 onPressed: _handleRefresh,
               ),
@@ -1437,116 +1407,6 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
   // MAIN BUILD
   // ───────────────────────────────────────────────────────────────────────────
 
-  Widget _buildStaffDrawer() {
-    return Drawer(
-      child: SafeArea(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: AppColors.primaryNavy),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    'MilkLink Staff',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Pasig Human Milk Bank',
-                    style: TextStyle(color: Colors.white70, fontSize: 13),
-                  ),
-                ],
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.dashboard_outlined, color: AppColors.primaryBlue),
-              title: const Text('Dashboard'),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() => _section = null);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.calendar_month, color: AppColors.primaryBlue),
-              title: const Text('Schedules'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SchedulesScreen()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.inventory_2_outlined, color: AppColors.primaryBlue),
-              title: const Text('Milk Bank Inventory'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const InventoryScreen()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.favorite_outline, color: AppColors.primaryBlue),
-              title: const Text('Donor Records'),
-              onTap: () {
-                Navigator.pop(context);
-                _openSection(StaffSection.donors);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.child_care, color: AppColors.primaryBlue),
-              title: const Text('Recipient Records'),
-              onTap: () {
-                Navigator.pop(context);
-                _openSection(StaffSection.recipients);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.assignment_outlined, color: AppColors.primaryBlue),
-              title: const Text('Milk Requests'),
-              onTap: () {
-                Navigator.pop(context);
-                _openSection(StaffSection.requests);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.person_search_outlined, color: AppColors.primaryBlue),
-              title: const Text('Pending Online Registrations'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const PendingRegistrationsScreen()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.calendar_today_outlined, color: AppColors.primaryBlue),
-              title: const Text('Screening Clinic'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const StaffScreeningAppointmentsScreen()),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final staffProvider = Provider.of<StaffProvider>(context);
@@ -1581,21 +1441,196 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
       );
     }
 
+    if (_section == null) {
+      final items = [
+        DashboardItem(
+          icon: Icons.favorite,
+          label: 'Donor Records',
+          badgeCount: staffProvider.activeDonors.length,
+          onTap: () => _openSection(StaffSection.donors),
+        ),
+        DashboardItem(
+          icon: Icons.child_care,
+          label: 'Recipient Records',
+          badgeCount: staffProvider.activePatients.length,
+          onTap: () => _openSection(StaffSection.recipients),
+        ),
+        DashboardItem(
+          icon: Icons.assignment,
+          label: 'Milk Requests',
+          badgeCount: staffProvider.activeRequests.length,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const MilkRequestsScreen()),
+            ).then((_) => staffProvider.fetchRequests(isArchived: false));
+          },
+        ),
+        DashboardItem(
+          icon: Icons.person_search,
+          label: 'Pending Online Registrations',
+          badgeCount: staffProvider.pendingRegistrationsCount > 0
+              ? staffProvider.pendingRegistrationsCount
+              : null,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const PendingRegistrationsScreen()),
+            ).then((_) => staffProvider.fetchDashboardCounts());
+          },
+        ),
+        DashboardItem(
+          icon: Icons.calendar_month,
+          label: 'Screening Clinic',
+          badgeCount: staffProvider.screeningAppointmentsCount > 0
+              ? staffProvider.screeningAppointmentsCount
+              : null,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const StaffScreeningAppointmentsScreen()),
+            ).then((_) => staffProvider.fetchDashboardCounts());
+          },
+        ),
+        DashboardItem(
+          icon: Icons.event_note,
+          label: 'Schedules',
+          badgeCount: staffProvider.activeSchedulesCount > 0
+              ? staffProvider.activeSchedulesCount
+              : null,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const SchedulesScreen(),
+            ),
+          ).then((_) => staffProvider.fetchDashboardCounts()),
+        ),
+        DashboardItem(
+          icon: Icons.inventory_2_outlined,
+          label: 'Milk Bank Inventory',
+          badgeCount: staffProvider.activeInventoryCount > 0
+              ? staffProvider.activeInventoryCount
+              : null,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const InventoryScreen(),
+            ),
+          ).then((_) => staffProvider.fetchDashboardCounts()),
+        ),
+        DashboardItem(
+          icon: Icons.bar_chart,
+          label: 'Metrics',
+          onTap: () => _showComingSoon('Metrics'),
+        ),
+      ];
+
+      final user = Provider.of<AuthProvider>(context).user;
+
+      final pendingRequestsCount = staffProvider.activeRequests
+          .where((r) => r.status.toLowerCase() == 'pending')
+          .length;
+
+      final stats = [
+        DashboardStatItem(
+          label: 'Total Donors',
+          value: staffProvider.activeDonors.length,
+          icon: Icons.favorite,
+        ),
+        DashboardStatItem(
+          label: 'Total Recipients',
+          value: staffProvider.activePatients.length,
+          icon: Icons.child_care,
+        ),
+        DashboardStatItem(
+          label: 'Pending Requests',
+          value: pendingRequestsCount,
+          icon: Icons.assignment_outlined,
+        ),
+      ];
+
+      return DashboardGridScaffold(
+        title: 'Dashboard',
+        items: items,
+        stats: stats,
+        isStatsLoading: staffProvider.status == StaffLoadingStatus.loading && staffProvider.activeDonors.isEmpty,
+        statsError: staffProvider.status == StaffLoadingStatus.error ? staffProvider.errorMessage : null,
+        onRetryStats: _loadAllDataAsync,
+        onRefresh: _loadAllDataAsync,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_none, color: AppColors.primaryNavy, size: 26),
+            tooltip: 'Notifications',
+            onPressed: _showNotifications,
+          ),
+          PopupMenuButton<String>(
+            tooltip: 'Account',
+            offset: const Offset(0, 48),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            onSelected: (val) {
+              if (val == 'profile') {
+                _showProfile();
+              } else if (val == 'sign_out') {
+                _signOut();
+              }
+            },
+            child: Padding(
+              padding: const EdgeInsets.only(right: 14, left: 4),
+              child: UserAvatar(
+                radius: 17,
+                avatarUrl: user?.avatarUrl,
+                initial: user?.name.first.isNotEmpty == true ? user!.name.first : 'S',
+                backgroundColor: AppColors.softBlue,
+                textColor: AppColors.primaryNavy,
+              ),
+            ),
+            itemBuilder: (ctx) => const [
+              PopupMenuItem(
+                value: 'profile',
+                child: Row(
+                  children: [
+                    Icon(Icons.person_outline, size: 20, color: AppColors.primaryNavy),
+                    SizedBox(width: 10),
+                    Text('Profile'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'sign_out',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout, size: 20, color: AppColors.error),
+                    SizedBox(width: 10),
+                    Text('Sign Out', style: TextStyle(color: AppColors.error)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+
+    if (_section == StaffSection.donors) {
+      return _buildDonorsView(staffProvider);
+    }
+
+    if (_section == StaffSection.recipients) {
+      return _buildRecipientsView(staffProvider);
+    }
+
     return PopScope(
-  canPop: _section == null,
-  onPopInvokedWithResult: (didPop, result) {
-    if (didPop) return;
-    setState(() => _section = null);
-  },
-  child: Scaffold(
-    backgroundColor: AppColors.background,
-    appBar: _buildAppBar(),
-    drawer: _buildStaffDrawer(),
-    body: _section == null
-        ? _buildDashboardHome(staffProvider)
-        : _buildSectionView(staffProvider),
-    floatingActionButton: fab,
-  ),
-);
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        setState(() => _section = null);
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: _buildAppBar(),
+        body: _buildSectionView(staffProvider),
+        floatingActionButton: fab,
+      ),
+    );
   }
 }

@@ -345,7 +345,7 @@ class _InventoryScreenState extends State<InventoryScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
         title: const Text('Milk Bank Inventory', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
@@ -354,7 +354,7 @@ class _InventoryScreenState extends State<InventoryScreen>
         bottom: TabBar(
           controller: _tabController,
           labelColor: AppColors.primaryNavy,
-          unselectedLabelColor: AppColors.accentBlue,
+          unselectedLabelColor: AppColors.primaryBlue,
           indicatorColor: AppColors.primaryBlue,
           indicatorWeight: 3,
           tabs: const [
@@ -445,7 +445,7 @@ class _InventoryScreenState extends State<InventoryScreen>
                         )
                       : null,
                   filled: true,
-                  fillColor: AppColors.background,
+                  fillColor: AppColors.surface,
                   contentPadding: const EdgeInsets.symmetric(vertical: 10),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -466,7 +466,7 @@ class _InventoryScreenState extends State<InventoryScreen>
                       height: 42,
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       decoration: BoxDecoration(
-                        color: AppColors.background,
+                        color: AppColors.surface,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: Colors.grey.shade300),
                       ),
@@ -525,7 +525,7 @@ class _InventoryScreenState extends State<InventoryScreen>
                         height: 42,
                         padding: const EdgeInsets.symmetric(horizontal: 10),
                         decoration: BoxDecoration(
-                          color: _selectedDateRange != null ? AppColors.softBlue : AppColors.background,
+                          color: _selectedDateRange != null ? AppColors.softBlue : AppColors.surface,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
                             color: _selectedDateRange != null ? AppColors.primaryBlue : Colors.grey.shade300,
@@ -536,7 +536,7 @@ class _InventoryScreenState extends State<InventoryScreen>
                             Icon(
                               Icons.calendar_today,
                               size: 16,
-                              color: _selectedDateRange != null ? AppColors.primaryNavy : AppColors.accentBlue,
+                              color: _selectedDateRange != null ? AppColors.primaryNavy : AppColors.primaryBlue,
                             ),
                             const SizedBox(width: 6),
                             Expanded(
@@ -547,7 +547,7 @@ class _InventoryScreenState extends State<InventoryScreen>
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: _selectedDateRange != null ? FontWeight.bold : FontWeight.normal,
-                                  color: _selectedDateRange != null ? AppColors.primaryNavy : AppColors.accentBlue,
+                                  color: _selectedDateRange != null ? AppColors.primaryNavy : AppColors.primaryBlue,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -691,7 +691,7 @@ class _InventoryScreenState extends State<InventoryScreen>
                           const SizedBox(height: 4),
                           Text(
                             item.dateRange.isNotEmpty ? 'Range: ${item.dateRange}' : 'Single Day Pickup',
-                            style: const TextStyle(fontSize: 13, color: AppColors.accentBlue),
+                            style: const TextStyle(fontSize: 13, color: AppColors.primaryBlue),
                           ),
                         ],
                       ),
@@ -707,12 +707,12 @@ class _InventoryScreenState extends State<InventoryScreen>
                     Expanded(
                       child: Row(
                         children: [
-                          const Icon(Icons.event_available, size: 16, color: AppColors.accentBlue),
+                          const Icon(Icons.event_available, size: 16, color: AppColors.primaryBlue),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
                               'Date: ${item.formattedCollectionDate}',
-                              style: const TextStyle(fontSize: 12, color: AppColors.accentBlue),
+                              style: const TextStyle(fontSize: 12, color: AppColors.primaryBlue),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -814,7 +814,7 @@ class _InventoryScreenState extends State<InventoryScreen>
                         )
                       : null,
                   filled: true,
-                  fillColor: AppColors.background,
+                  fillColor: AppColors.surface,
                   contentPadding: const EdgeInsets.symmetric(vertical: 10),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -931,7 +931,7 @@ class _InventoryScreenState extends State<InventoryScreen>
                       ),
                       child: Icon(
                         Icons.kitchen,
-                        color: fridge.isUnpasteurized ? AppColors.primaryBlue : AppColors.accentPink,
+                        color: fridge.isUnpasteurized ? AppColors.primaryBlue : AppColors.primaryBlue,
                         size: 24,
                       ),
                     ),
@@ -953,7 +953,7 @@ class _InventoryScreenState extends State<InventoryScreen>
                             fridge.fridgeType,
                             style: TextStyle(
                               fontSize: 13,
-                              color: fridge.isUnpasteurized ? AppColors.primaryBlue : AppColors.accentPink,
+                              color: fridge.isUnpasteurized ? AppColors.primaryBlue : AppColors.primaryBlue,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -989,14 +989,14 @@ class _InventoryScreenState extends State<InventoryScreen>
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppColors.background,
+                        color: AppColors.surface,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: Colors.grey.shade300),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.format_list_bulleted, size: 14, color: AppColors.accentBlue),
+                          const Icon(Icons.format_list_bulleted, size: 14, color: AppColors.primaryBlue),
                           const SizedBox(width: 4),
                           Text(
                             '${fridge.entryCount} entries',
@@ -1112,8 +1112,8 @@ class _InventoryScreenState extends State<InventoryScreen>
         fg = AppColors.primaryNavy;
         break;
       case 'dispensed':
-        bg = AppColors.accentPink.withValues(alpha: 0.15);
-        fg = AppColors.accentPink;
+        bg = AppColors.primaryBlue.withValues(alpha: 0.15);
+        fg = AppColors.primaryBlue;
         break;
       case 'pending':
       default:
@@ -1156,7 +1156,7 @@ class _InventoryScreenState extends State<InventoryScreen>
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.accentBlue),
+              style: const TextStyle(color: AppColors.primaryBlue),
             ),
             const SizedBox(height: 20),
             FilledButton.icon(
@@ -1193,7 +1193,7 @@ class _InventoryScreenState extends State<InventoryScreen>
               Text(
                 subtitle,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 13, color: AppColors.accentBlue),
+                style: const TextStyle(fontSize: 13, color: AppColors.primaryBlue),
               ),
             ],
           ],

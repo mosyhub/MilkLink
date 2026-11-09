@@ -22,8 +22,8 @@ class StatusBadge extends StatelessWidget {
       bg = AppColors.errorBg;
       fg = AppColors.error;
     } else {
-      bg = AppColors.infoBg;
-      fg = AppColors.info;
+      bg = AppColors.softBlue;
+      fg = AppColors.primaryBlue;
     }
 
     return Container(
