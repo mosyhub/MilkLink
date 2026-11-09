@@ -3,6 +3,7 @@ import '../../core/constants/app_colors.dart';
 import '../../widgets/app_widgets.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/network/api_client.dart';
+import '../../models/milk_request_model.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 
@@ -23,6 +24,33 @@ class _DonorMilkRequestScreenState extends State<DonorMilkRequestScreen> {
 
   String _relation = 'Mother / Guardian';
   bool _isSubmitting = false;
+  bool _isLoadingRequests = true;
+  List<MilkRequestModel> _myRequests = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMyRequests();
+  }
+
+  Future<void> _loadMyRequests() async {
+    try {
+      final response = await ApiClient.get(ApiConstants.myMilkRequests);
+      if (!mounted) return;
+      final requests = response is Map && response['requests'] is List
+          ? (response['requests'] as List)
+              .whereType<Map>()
+              .map((item) => MilkRequestModel.fromJson(Map<String, dynamic>.from(item)))
+              .toList()
+          : <MilkRequestModel>[];
+      setState(() {
+        _myRequests = requests;
+        _isLoadingRequests = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingRequests = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -130,6 +158,17 @@ class _DonorMilkRequestScreenState extends State<DonorMilkRequestScreen> {
               ),
             ),
             const SizedBox(height: 16),
+            if (_isLoadingRequests)
+              const Center(child: CircularProgressIndicator())
+            else if (_myRequests.isNotEmpty) ...[
+              const Text(
+                'My Milk Requests',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              ),
+              const SizedBox(height: 8),
+              ..._myRequests.map(_buildRequestSummary),
+              const SizedBox(height: 8),
+            ],
             CustomTextField(
               label: 'Infant / Recipient Full Name *',
               controller: _recipientNameController,
@@ -196,5 +235,35 @@ class _DonorMilkRequestScreenState extends State<DonorMilkRequestScreen> {
       ),
     );
   }
-}
 
+  Widget _buildRequestSummary(MilkRequestModel request) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(request.requestNumber, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(request.recipientName, style: const TextStyle(color: AppColors.textSecondary)),
+                Text(request.formattedDate, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+              ],
+            ),
+          ),
+          Chip(
+            label: Text(request.status),
+            labelStyle: const TextStyle(fontSize: 11),
+            visualDensity: VisualDensity.compact,
+          ),
+        ],
+      ),
+    );
+  }
+}

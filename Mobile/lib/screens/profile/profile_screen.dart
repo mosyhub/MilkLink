@@ -159,10 +159,6 @@ class ProfileScreen extends StatelessWidget {
                         : (user?.username.isNotEmpty == true ? '@${user!.username}' : ''),
                     style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
                   ),
-                  if (donor != null) ...[
-                    const SizedBox(height: 8),
-                    StatusChip(status: donor.eligibility),
-                  ],
                 ],
               ),
             ),
@@ -184,32 +180,6 @@ class ProfileScreen extends StatelessWidget {
                       );
                     },
                   ),
-                  const Divider(height: 1, indent: 56, color: AppColors.border),
-                  _buildProfileRow(
-                    context,
-                    icon: Icons.lock_reset_outlined,
-                    title: 'Change Password',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
-                      );
-                    },
-                  ),
-                  if (donor == null) ...[
-                    const Divider(height: 1, indent: 56, color: AppColors.border),
-                    _buildProfileRow(
-                      context,
-                      icon: Icons.qr_code_scanner_outlined,
-                      title: 'Claim Hospital Account',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const ClaimRecordScreen()),
-                        );
-                      },
-                    ),
-                  ],
                   if (user?.isStaff == true || user?.isAdmin == true) ...[
                     const Divider(height: 1, indent: 56, color: AppColors.border),
                     _buildProfileRow(

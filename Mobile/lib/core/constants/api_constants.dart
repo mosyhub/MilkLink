@@ -1,7 +1,7 @@
 class ApiConstants {
   // ── Connection ─────────────────────────────────────────────────────────────
   // Change to '10.0.2.2' if using an Android Emulator, or your computer's local Wi-Fi IP for physical devices.
-  static const String _host = '10.0.2.2';
+  static const String _host = '192.168.0.103';
 
   // Keep in sync with PORT in Backend/config/.env
   static const int _port = 4000;
@@ -81,6 +81,7 @@ class ApiConstants {
 
   // Requests
   static String get requests => '$baseUrl/requests';
+  static String get myMilkRequests => '$baseUrl/requests/mine';
   static String get archivedRequests => '$baseUrl/requests/archived';
   static String requestById(String id) => '$baseUrl/request/$id';
   static String softDeleteRequest(String id) => '$baseUrl/request/$id/soft-delete';

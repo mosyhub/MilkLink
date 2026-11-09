@@ -3,6 +3,9 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/api_constants.dart';
+import '../../core/network/api_client.dart';
+import '../../models/milk_request_model.dart';
 import '../../providers/articles_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/donor_provider.dart';
@@ -15,6 +18,7 @@ import '../donor/donation_history_screen.dart';
 import '../donor/donor_milk_request_screen.dart';
 import '../donor/milk_pickup_schedule_screen.dart';
 import '../donor/milk_status_tracking_screen.dart';
+import '../donor/my_milk_requests_screen.dart';
 import '../donor/my_screening_appointments_screen.dart';
 import '../donor/returning_donor_search_screen.dart';
 import '../main_navigation_screen.dart';
@@ -93,6 +97,9 @@ class HomeScreen extends StatelessWidget {
               const SectionHeader(title: 'Quick Actions'),
               const SizedBox(height: 12),
               _buildQuickActionsGrid(context, authProvider.isDonorEligible, donor),
+              const SizedBox(height: 24),
+
+              const MyMilkRequestsCard(),
               const SizedBox(height: 24),
 
               // 4. Announcements
@@ -282,6 +289,18 @@ class HomeScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const DonorMilkRequestScreen()),
+                );
+              },
+            ),
+            _buildTile(
+              context,
+              width: itemWidth,
+              icon: Icons.receipt_long_outlined,
+              label: 'My Requests',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MyMilkRequestsScreen()),
                 );
               },
             ),
@@ -639,3 +658,119 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
+class MyMilkRequestsCard extends StatefulWidget {
+  const MyMilkRequestsCard({super.key});
+
+  @override
+  State<MyMilkRequestsCard> createState() => _MyMilkRequestsCardState();
+}
+
+class _MyMilkRequestsCardState extends State<MyMilkRequestsCard> {
+  bool _isLoading = true;
+  List<MilkRequestModel> _requests = [];
+  bool _loadFailed = false;
+  String? _loadError;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRequests();
+  }
+
+  Future<void> _loadRequests() async {
+    try {
+      final response = await ApiClient.get(ApiConstants.myMilkRequests);
+      if (!mounted) return;
+      final requests = response is Map && response['requests'] is List
+          ? (response['requests'] as List)
+              .whereType<Map>()
+              .map((item) => MilkRequestModel.fromJson(Map<String, dynamic>.from(item)))
+              .toList()
+          : <MilkRequestModel>[];
+      setState(() {
+        _requests = requests;
+        _isLoading = false;
+      });
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _loadFailed = true;
+          _loadError = error.toString().trim().isEmpty ? 'Request failed' : error.toString();
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const AppCard(child: Center(child: CircularProgressIndicator()));
+    }
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'My Milk Requests',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryNavy),
+              ),
+              TextButton(
+                onPressed: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const DonorMilkRequestScreen()),
+                  );
+                  _loadRequests();
+                },
+                child: const Text('Request Milk'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (_loadFailed)
+            Text(
+              'Unable to load requests: $_loadError',
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            )
+          else if (_requests.isEmpty)
+            const Text(
+              'No milk requests submitted yet.',
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            )
+          else
+            ..._requests.take(3).map(
+                (request) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              request.requestNumber,
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryNavy),
+                            ),
+                            Text(
+                              '${request.recipientName} • ${request.formattedVolumeRequested}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                            ),
+                          ],
+                        ),
+                      ),
+                      StatusChip(status: request.status),
+                    ],
+                  ),
+                ),
+              ),
+        ],
+      ),
+    );
+  }
+}
