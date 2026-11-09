@@ -21,7 +21,21 @@ const auditLogSchema = new mongoose.Schema({
             'UPDATE_COLLECTION',
             'ARCHIVE_COLLECTION',
             'RESTORE_COLLECTION',
-            'REVERSE_PICKUP'
+            'REVERSE_PICKUP',
+            'CREATE_ACCOUNT',
+            'DEACTIVATE_ACCOUNT',
+            'REACTIVATE_ACCOUNT',
+            'DELETE_ACCOUNT',
+            'CHANGE_ROLE',
+            'REVIEW_REQUEST',
+            'APPROVE_REQUEST',
+            'REJECT_REQUEST',
+            'CANCEL_REQUEST',
+            'CREATE_REQUEST',
+            'UPDATE_REQUEST',
+            'ARCHIVE_REQUEST',
+            'RESTORE_REQUEST',
+            'DELETE_REQUEST'
         ]
     },
     user: {
@@ -34,7 +48,7 @@ const auditLogSchema = new mongoose.Schema({
     },
     targetType: {
         type: String,
-        enum: ['Fridge', 'Inventory', 'Collection', 'Request', 'Schedule']
+        enum: ['Fridge', 'Inventory', 'Collection', 'Request', 'Schedule', 'User']
     },
     targetId: {
         type: ObjectId

@@ -16,10 +16,16 @@ const {
   getPatientHospitals,
   getPasteurizedMilkPerMonth,
   getDonorAge,
+  getDashboardMetrics,
 } = require("../controllers/metricController");
 
+const staffAndAdmin = [isAuthenticatedUser, authorizeRoles("SuperAdmin", "Admin", "Staff")];
+
+router.route("/dashboard/metrics")
+  .get(...staffAndAdmin, getDashboardMetrics);
+
 router.route("/metrics")
-  .get(isAuthenticatedUser, authorizeRoles("SuperAdmin", "Admin"), getMetrics);
+  .get(...staffAndAdmin, getMetrics);
 
 router.route("/milkPerMonth")
   .get(

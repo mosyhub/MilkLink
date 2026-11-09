@@ -31,7 +31,14 @@ exports.isAuthenticatedUser = catchAsyncErrors(async (req, res, next) => {
         return next(new ErrorHandler('User no longer exists', 401));
     }
 
+    if (user.status === 'Deactivated') {
+        return next(new ErrorHandler('This account is deactivated. Contact an administrator.', 403));
+    }
+
     req.user = user;
+
+    // Fire-and-forget lastLogin update — don't await to avoid latency
+    User.findByIdAndUpdate(decoded.id, { lastLogin: new Date() }).catch(() => { });
 
     return next();
 });
@@ -55,3 +62,28 @@ exports.authorizeRoles = (...roles) => {
         return next();
     };
 };
+
+// Optional authentication - populates req.user if valid token exists, doesn't throw if not
+exports.optionalAuth = catchAsyncErrors(async (req, res, next) => {
+    let token;
+
+    if (req.headers.authorization?.startsWith('Bearer ')) {
+        token = req.headers.authorization.split(' ')[1];
+    } else if (req.cookies?.accessToken) {
+        token = req.cookies.accessToken;
+    }
+
+    if (!token) {
+        return next();
+    }
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.id);
+        if (user && user.status !== 'Deactivated') {
+            req.user = user;
+        }
+    } catch (_) { }
+
+    return next();
+});

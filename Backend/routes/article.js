@@ -1,32 +1,37 @@
 const express = require('express');
 const router = express.Router();
-const upload = require('../utils/multer')
+const upload = require('../utils/multer');
 
-const { isAuthenticatedUser, authorizeRoles } = require('../middlewares/auth');
-const { allArticles, createArticle, updateArticle, deleteArticle, getArticleDetails, createHTMLArticle, updateHTMLArticle, softDeleteArticle, restoreArticle, archivedArticles } = require('../controllers/articleController');
+const { isAuthenticatedUser, authorizeRoles, optionalAuth } = require('../middlewares/auth');
+const {
+    allArticles,
+    createArticle,
+    updateArticle,
+    deleteArticle,
+    getArticleDetails,
+    softDeleteArticle,
+    restoreArticle,
+    archivedArticles
+} = require('../controllers/articleController');
 
-//Super Admin Routes
+const adminOnly = [isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin')];
+
 router.route('/articles')
-    .get(isAuthenticatedUser, allArticles)
-    .post(isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin'), upload.single('file'), createArticle)
-
-router.route('/html-article')
-    .post(isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin'), upload.single('image'), createHTMLArticle)
-router.route('/html-article/:id')
-    .put(isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin'), upload.single('image'), updateHTMLArticle)
+    .get(optionalAuth, allArticles)
+    .post(...adminOnly, upload.single('file'), createArticle);
 
 router.route('/article/:id')
-    .get(isAuthenticatedUser, getArticleDetails)
-    .put(isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin'), updateArticle)
-    .delete(isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin'), deleteArticle)
+    .get(optionalAuth, getArticleDetails)
+    .put(...adminOnly, updateArticle)
+    .delete(...adminOnly, deleteArticle);
 
 router.route('/article/archive/:id')
-    .put(isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin'), softDeleteArticle)
+    .put(...adminOnly, softDeleteArticle);
 
 router.route('/article/restore/:id')
-    .put(isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin'), restoreArticle)
+    .put(...adminOnly, restoreArticle);
 
 router.route('/articles/archived')
-    .get(isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin'), archivedArticles)
-    
+    .get(...adminOnly, archivedArticles);
+
 module.exports = router;

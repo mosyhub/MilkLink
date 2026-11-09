@@ -14,6 +14,17 @@ const connectDatabase = () => {
             } catch (collErr) {
                 // Ignore if collection doesn't exist or command not permitted
             }
+
+            try {
+                // Backfill status: 'Active' on existing users missing the field
+                const User = require('../models/user');
+                await User.updateMany(
+                    { status: { $exists: false } },
+                    { $set: { status: 'Active' } }
+                );
+            } catch (userErr) {
+                // Ignore if error
+            }
         })
         .catch(err => {
             console.error(`Database connection error: ${err.message}`);

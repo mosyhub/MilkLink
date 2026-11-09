@@ -1,48 +1,54 @@
 const mongoose = require("mongoose");
 const { ObjectId } = mongoose.Schema.Types;
-const softDeletePlugin = require('./plugins/softDelete')
+const softDeletePlugin = require('./plugins/softDelete');
+
+const historyEntrySchema = new mongoose.Schema({
+  action: {
+    type: String,
+    required: true,
+  },
+  actor: {
+    type: ObjectId,
+    ref: "User",
+  },
+  actorName: {
+    type: String,
+    default: "Staff / Admin",
+  },
+  timestamp: {
+    type: Date,
+    default: Date.now,
+  },
+  notes: {
+    type: String,
+    default: "",
+  },
+  details: {
+    type: mongoose.Schema.Types.Mixed,
+  },
+}, { _id: false });
+
 const requestSchema = new mongoose.Schema({
+  requestNumber: {
+    type: String,
+    trim: true,
+  },
   date: {
     type: Date,
-    required: [true, "Please enter date"],
+    default: Date.now,
   },
   patient: {
     type: ObjectId,
-    required: [true, "Please enter the patient"],
     ref: "Patient",
   },
-  department: {
+  recipientName: {
     type: String,
+    trim: true,
   },
-  hospital: {
+  relationToRecipient: {
     type: String,
-    default: "Pasig-Pateros District Hospital",
-  },
-  diagnosis: {
-    type: String,
-    required: [true, "Please enter diagnosis of the patient"],
-  },
-  reason: {
-    type: String,
-    required: [true, "Please enter reason for Byteurized EBM"],
-  },
-  doctor: {
-    type: String,
-    required: [true, "Please enter prescribing doctor"],
-  },
-  requestedBy: {
-    type: ObjectId,
-    required: [true, "Staff ID required"],
-    ref: "User",
-  },
-  status: {
-    type: String,
-    enum: ["Pending", "Reserved", "Done", "Canceled"],
-    default: "Pending",
-  },
-  comment: {
-    type: String,
-    default: "",
+    enum: ["Mother / Guardian", "Father", "Healthcare Provider", "Relative / Foster", "Mother", "Guardian", "Father / Relative", "Other"],
+    default: "Mother / Guardian",
   },
   volumeRequested: {
     volume: {
@@ -51,23 +57,108 @@ const requestSchema = new mongoose.Schema({
     },
     days: {
       type: Number,
-      required: [true, "Please enter Volume Requested"],
+      default: 7,
     },
   },
-  outcome: {
+  approvedVolume: {
+    type: Number,
+  },
+  reason: {
+    type: String,
+    trim: true,
+  },
+  hospital: {
+    type: String,
+    default: "Pasig-Pateros District Hospital",
+  },
+  department: {
     type: String,
   },
-  type: {
+  doctor: {
     type: String,
-    enum: ["Inpatient", "Outpatient"],
+    default: "Attending Staff",
   },
+  additionalRemarks: {
+    type: String,
+    trim: true,
+  },
+  notes: {
+    type: String,
+    default: "",
+  },
+  requestedBy: {
+    type: ObjectId,
+    ref: "User",
+  },
+  status: {
+    type: String,
+    enum: ["Pending", "Under Review", "Approved", "Fulfilled", "Rejected", "Cancelled", "Reserved", "Done", "Canceled"],
+    default: "Pending",
+  },
+  rejectionReason: {
+    type: String,
+    trim: true,
+  },
+  cancellationReason: {
+    type: String,
+    trim: true,
+  },
+  clinicalReview: {
+    reviewedBy: {
+      type: ObjectId,
+      ref: "User",
+    },
+    reviewerName: {
+      type: String,
+    },
+    reviewDate: {
+      type: Date,
+    },
+    assessmentNotes: {
+      type: String,
+      trim: true,
+    },
+    decision: {
+      type: String,
+      enum: ["Eligible", "Not Eligible"],
+    },
+  },
+  fulfillmentDetails: {
+    fulfilledAt: {
+      type: Date,
+    },
+    fulfilledBy: {
+      type: ObjectId,
+      ref: "User",
+    },
+    staffName: {
+      type: String,
+    },
+    receiverName: {
+      type: String,
+      trim: true,
+    },
+  },
+  allocatedBatches: [
+    {
+      invId: {
+        type: ObjectId,
+        ref: "Inventory",
+      },
+      batch: String,
+      pool: String,
+      bottleType: Number,
+      bottlesAllocated: Number,
+      volDischarge: Number,
+      expiryDate: Date,
+    }
+  ],
   milklink: {
     ebm: [
       {
         invId: {
           type: ObjectId,
           ref: "Inventory",
-          required: true
         },
         bottleType: Number,
         batch: Number,
@@ -76,17 +167,11 @@ const requestSchema = new mongoose.Schema({
           start: Number,
           end: Number,
         },
-        volDischarge: {
-          type: Number,
-        },
+        volDischarge: Number,
       },
     ],
-    transport: {
-      type: String,
-    },
-    dispenseAt: {
-      type: Date,
-    },
+    transport: String,
+    dispenseAt: Date,
     approvedBy: {
       type: ObjectId,
       ref: "User",
@@ -94,18 +179,16 @@ const requestSchema = new mongoose.Schema({
     disapprovedBy: {
       type: ObjectId,
       ref: "User",
-    }
+    },
   },
-
+  history: [historyEntrySchema],
   images: [
     {
       public_id: {
         type: String,
-        required: true,
       },
       url: {
         type: String,
-        required: true,
       },
     },
   ],
@@ -115,5 +198,18 @@ const requestSchema = new mongoose.Schema({
   },
 });
 
-requestSchema.plugin(softDeletePlugin)
+requestSchema.pre("save", async function () {
+  if (!this.requestNumber) {
+    const count = await this.constructor.countDocuments();
+    const pad = String(count + 1).padStart(5, '0');
+    this.requestNumber = `REQ-${new Date().getFullYear()}-${pad}`;
+  }
+});
+
+requestSchema.index({ status: 1 });
+requestSchema.index({ createdAt: -1 });
+requestSchema.index({ requestedBy: 1 });
+requestSchema.index({ requestNumber: 1 });
+
+requestSchema.plugin(softDeletePlugin);
 module.exports = mongoose.model("Request", requestSchema);

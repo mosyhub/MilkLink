@@ -50,6 +50,7 @@ const sign = require('./routes/signatories');
 const consent = require('./routes/consent');
 const pickup = require('./routes/pickup');
 const screening = require('./routes/screeningAppointment');
+const account = require('./routes/account');
 // API routes
 app.use('/api/v1', user);
 app.use('/api/v1', event);
@@ -71,6 +72,7 @@ app.use('/api/v1', bag);
 app.use('/api/v1', metrics)
 app.use('/api/v1', announcement);
 app.use('/api/v1', sign);
+app.use('/api/v1', account);
 // Example refresh route
 app.post('/api/v1/refresh-token', (req, res) => {
     const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
