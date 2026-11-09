@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../core/constants/app_colors.dart';
-import '../../models/article_model.dart';
+import '../core/constants/app_colors.dart';
+import '../models/article_model.dart';
 
 class ArticleCard extends StatelessWidget {
   final ArticleModel article;
   final VoidCallback? onTap;
 
-  const ArticleCard({Key? key, required this.article, this.onTap}) : super(key: key);
+  const ArticleCard({super.key, required this.article, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +16,7 @@ class ArticleCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.border),
           boxShadow: [
@@ -30,34 +30,21 @@ class ArticleCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (article.firstImageUrl != null && article.firstImageUrl!.isNotEmpty)
+            if (article.firstImageUrl != null &&
+                article.firstImageUrl!.isNotEmpty)
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(16)),
                 child: Image.network(
                   article.firstImageUrl!,
                   height: 140,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    height: 140,
-                    color: AppColors.softPink,
-                    child: const Center(
-                      child: Icon(Icons.menu_book, color: AppColors.accentPink, size: 36),
-                    ),
-                  ),
+                  errorBuilder: (_, __, ___) => _placeholder(),
                 ),
               )
             else
-              Container(
-                height: 100,
-                decoration: const BoxDecoration(
-                  color: AppColors.softPink,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                ),
-                child: const Center(
-                  child: Icon(Icons.menu_book, color: AppColors.accentPink, size: 36),
-                ),
-              ),
+              _placeholder(),
             Padding(
               padding: const EdgeInsets.all(14),
               child: Column(
@@ -68,8 +55,8 @@ class ArticleCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
                     ),
                   ),
@@ -79,17 +66,14 @@ class ArticleCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                    ),
+                        fontSize: 12, color: AppColors.textSecondary),
                   ),
-                  if (true) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      DateFormat('MMM d, yyyy').format(article.createdAt),
-                      style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
-                    ),
-                  ]
+                  const SizedBox(height: 8),
+                  Text(
+                    DateFormat('MMM d, yyyy').format(article.createdAt),
+                    style: const TextStyle(
+                        fontSize: 11, color: AppColors.textSecondary),
+                  ),
                 ],
               ),
             ),
@@ -98,5 +82,17 @@ class ArticleCard extends StatelessWidget {
       ),
     );
   }
-}
 
+  Widget _placeholder() {
+    return Container(
+      height: 100,
+      decoration: const BoxDecoration(
+        color: AppColors.softBlue,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      child: const Center(
+        child: Icon(Icons.menu_book_outlined, color: AppColors.primaryBlue, size: 32),
+      ),
+    );
+  }
+}

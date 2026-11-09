@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'core/constants/app_colors.dart';
+import 'core/constants/app_theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/donor_provider.dart';
 import 'providers/events_provider.dart';
@@ -17,7 +16,7 @@ void main() async {
 }
 
 class MilkLinkApp extends StatelessWidget {
-  const MilkLinkApp({Key? key}) : super(key: key);
+  const MilkLinkApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -32,30 +31,9 @@ class MilkLinkApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AdminProvider()),
       ],
       child: MaterialApp(
-        title: 'MilkLink Mobile',
+        title: 'MilkLink',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: AppColors.primaryNavy,
-            primary: AppColors.primaryNavy,
-            secondary: AppColors.primaryBlue,
-            surface: AppColors.surface,
-          ),
-          scaffoldBackgroundColor: AppColors.background,
-          textTheme: GoogleFonts.interTextTheme(Theme.of(context).textTheme),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Colors.white,
-            foregroundColor: AppColors.primaryNavy,
-            elevation: 0,
-            centerTitle: false,
-            titleTextStyle: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.primaryNavy,
-            ),
-          ),
-        ),
+        theme: AppTheme.theme,
         home: const SplashScreen(),
       ),
     );

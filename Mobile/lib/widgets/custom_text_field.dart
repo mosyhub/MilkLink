@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/constants/app_colors.dart';
 
 class CustomTextField extends StatelessWidget {
-  final String label;
+  final String? label;
   final String? hint;
   final TextEditingController? controller;
   final bool obscureText;
@@ -17,8 +17,8 @@ class CustomTextField extends StatelessWidget {
   final TextCapitalization textCapitalization;
 
   const CustomTextField({
-    Key? key,
-    required this.label,
+    super.key,
+    this.label,
     this.hint,
     this.controller,
     this.obscureText = false,
@@ -31,22 +31,24 @@ class CustomTextField extends StatelessWidget {
     this.onTap,
     this.onChanged,
     this.textCapitalization = TextCapitalization.none,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+        if (label != null && label!.isNotEmpty) ...[
+          Text(
+            label!,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
           ),
-        ),
-        const SizedBox(height: 6),
+          const SizedBox(height: 6),
+        ],
         TextFormField(
           controller: controller,
           obscureText: obscureText,
@@ -57,35 +59,14 @@ class CustomTextField extends StatelessWidget {
           onTap: onTap,
           onChanged: onChanged,
           textCapitalization: textCapitalization,
-          style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
+          style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
           decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 14),
+            hintText: hint ?? label,
             prefixIcon: prefixIcon,
             suffixIcon: suffixIcon,
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.primaryNavy, width: 1.5),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.error),
-            ),
           ),
         ),
       ],
     );
   }
 }
-

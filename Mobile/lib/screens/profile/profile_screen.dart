@@ -51,7 +51,7 @@ class ProfileScreen extends StatelessWidget {
     final donor = donorProvider.donor;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
         title: const Text('My Profile'),
         backgroundColor: Colors.white,
@@ -78,8 +78,8 @@ class ProfileScreen extends StatelessWidget {
                     initial: user?.name.first.isNotEmpty == true
                         ? user!.name.first[0].toUpperCase()
                         : 'M',
-                    backgroundColor: AppColors.softPink,
-                    textColor: AppColors.accentPink,
+                    backgroundColor: AppColors.softBlue,
+                    textColor: AppColors.primaryBlue,
                   ),
                   const SizedBox(height: 12),
                   Text(
@@ -102,7 +102,7 @@ class ProfileScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.softPink,
+                      color: AppColors.softBlue,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -112,7 +112,7 @@ class ProfileScreen extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.accentPink,
+                        color: AppColors.primaryBlue,
                       ),
                     ),
                   ),

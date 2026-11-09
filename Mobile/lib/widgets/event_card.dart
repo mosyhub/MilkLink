@@ -7,24 +7,23 @@ class EventCard extends StatelessWidget {
   final LettingEventModel event;
   final VoidCallback? onTap;
 
-  const EventCard({Key? key, required this.event, this.onTap}) : super(key: key);
+  const EventCard({super.key, required this.event, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.border),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.02),
-              blurRadius: 10,
+              blurRadius: 8,
               offset: const Offset(0, 4),
             ),
           ],
@@ -34,10 +33,10 @@ class EventCard extends StatelessWidget {
           children: [
             // Date Badge
             Container(
-              width: 55,
+              width: 52,
               padding: const EdgeInsets.symmetric(vertical: 10),
               decoration: BoxDecoration(
-                color: AppColors.softPink,
+                color: AppColors.softBlue,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -45,24 +44,23 @@ class EventCard extends StatelessWidget {
                   Text(
                     DateFormat('MMM').format(event.details.date).toUpperCase(),
                     style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.accentPink,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primaryBlue,
                     ),
                   ),
                   Text(
                     DateFormat('d').format(event.details.date),
                     style: const TextStyle(
                       fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.accentPink,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primaryNavy,
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(width: 14),
-            // Details
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -70,33 +68,37 @@ class EventCard extends StatelessWidget {
                   Text(
                     event.activity,
                     style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      const Icon(Icons.access_time, size: 14, color: AppColors.textSecondary),
+                      const Icon(Icons.access_time_outlined,
+                          size: 13, color: AppColors.textSecondary),
                       const SizedBox(width: 4),
                       Text(
-                        '${event.details.time.start} - ${event.details.time.end}',
-                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        '${event.details.time.start} – ${event.details.time.end}',
+                        style: const TextStyle(
+                            fontSize: 12, color: AppColors.textSecondary),
                       ),
                     ],
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textSecondary),
+                      const Icon(Icons.location_on_outlined,
+                          size: 13, color: AppColors.textSecondary),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           event.venue.fullAddress,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                          style: const TextStyle(
+                              fontSize: 12, color: AppColors.textSecondary),
                         ),
                       ),
                     ],
@@ -104,12 +106,10 @@ class EventCard extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppColors.textMuted),
+            const Icon(Icons.chevron_right, color: AppColors.textSecondary),
           ],
         ),
       ),
     );
   }
 }
-
-

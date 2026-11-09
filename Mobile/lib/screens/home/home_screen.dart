@@ -39,30 +39,14 @@ class HomeScreen extends StatelessWidget {
     final donor = donorProvider.donor;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: const BoxDecoration(
-                color: AppColors.softPink,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.volunteer_activism, color: AppColors.accentPink, size: 20),
-            ),
-            const SizedBox(width: 10),
-            const Text(
-              'MilkLink Portal',
-              style: TextStyle(
-                color: AppColors.primaryNavy,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
+        title: Image.asset(
+          'assets/images/milklink_logo.png',
+          height: 32,
+          alignment: Alignment.centerLeft,
         ),
         actions: [
           Stack(

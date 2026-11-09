@@ -1,21 +1,20 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../providers/auth_provider.dart';
-import '../../widgets/custom_button.dart';
-import '../../widgets/custom_text_field.dart';
+import '../../widgets/wave_footer.dart';
 import '../main_navigation_screen.dart';
 import '../staff/staff_dashboard_screen.dart';
 
 enum ClaimInputMethod { qrScan, manualToken }
 
 class ClaimRecordScreen extends StatefulWidget {
-  const ClaimRecordScreen({Key? key}) : super(key: key);
+  const ClaimRecordScreen({super.key});
 
   @override
   State<ClaimRecordScreen> createState() => _ClaimRecordScreenState();
@@ -24,19 +23,24 @@ class ClaimRecordScreen extends StatefulWidget {
 class _ClaimRecordScreenState extends State<ClaimRecordScreen> {
   final _setupFormKey = GlobalKey<FormState>();
 
-  // State: Has the record been verified?
+  // Verification state
   bool _isVerified = false;
   bool _isVerifying = false;
   Map<String, dynamic>? _verifiedData;
   String _activeToken = '';
 
-  // Input Method (QR Code Scanner vs Manual Token)
+  // Input method (QR vs manual token)
   ClaimInputMethod _inputMethod = ClaimInputMethod.qrScan;
 
-  // Manual Token Input
+  // Controllers
   final _tokenController = TextEditingController();
+  final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  final _passwordFocus = FocusNode();
 
-  // QR scanning (camera + gallery image)
+  // QR scanning
   final MobileScannerController _scannerController = MobileScannerController(
     formats: const [BarcodeFormat.qrCode],
     facing: CameraFacing.back,
@@ -48,16 +52,11 @@ class _ClaimRecordScreenState extends State<ClaimRecordScreen> {
   DateTime? _lastScannedAt;
   bool _torchOn = false;
 
-  // Streamlined Account Credentials Form
-  final _usernameController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
-  final _emailController = TextEditingController();
-
+  // Obscure toggles
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
 
-  // Password Policy Checklist
+  // Password checklist state
   bool _hasMinLength = false;
   bool _hasUppercase = false;
   bool _hasLowercase = false;
@@ -68,6 +67,7 @@ class _ClaimRecordScreenState extends State<ClaimRecordScreen> {
   void initState() {
     super.initState();
     _passwordController.addListener(_checkPassword);
+    _passwordFocus.addListener(() => setState(() {}));
   }
 
   void _checkPassword() {
@@ -89,10 +89,23 @@ class _ClaimRecordScreenState extends State<ClaimRecordScreen> {
     _scannerController.dispose();
     _tokenController.dispose();
     _usernameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _emailController.dispose();
+    _passwordFocus.dispose();
     super.dispose();
+  }
+
+  void _showToast(String message, {Color? bg}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: bg ?? AppColors.primaryNavy,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
   }
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -111,7 +124,6 @@ class _ClaimRecordScreenState extends State<ClaimRecordScreen> {
     } catch (_) {}
   }
 
-  /// Accepts either a raw token or the MilkLink QR JSON and returns the token.
   String _extractToken(String raw) {
     final value = raw.trim();
     if (value.startsWith('{') && value.endsWith('}')) {
@@ -137,7 +149,6 @@ class _ClaimRecordScreenState extends State<ClaimRecordScreen> {
     }
     if (raw == null) return;
 
-    // Cooldown so a bad code isn't re-submitted in a loop
     final now = DateTime.now();
     if (_lastScannedValue == raw &&
         _lastScannedAt != null &&
@@ -170,24 +181,14 @@ class _ClaimRecordScreenState extends State<ClaimRecordScreen> {
       }
 
       if (raw == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No QR code found in that image. Try a clearer, closer photo.'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        _showToast('No QR code found in that image. Try a clearer photo.', bg: AppColors.error);
         return;
       }
 
       await _handleVerifyToken(_extractToken(raw));
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not read the selected image.'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      _showToast('Could not read the selected image.', bg: AppColors.error);
     }
   }
 
@@ -211,15 +212,13 @@ class _ClaimRecordScreenState extends State<ClaimRecordScreen> {
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // VERIFY / BIND
+  // VERIFY & BIND LOGIC
   // ───────────────────────────────────────────────────────────────────────────
 
   Future<void> _handleVerifyToken(String tokenToVerify) async {
     final clean = tokenToVerify.trim();
     if (clean.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please scan a QR code or enter a claim token.')),
-      );
+      _showToast('Please scan a QR code or enter a claim token.');
       return;
     }
 
@@ -237,18 +236,14 @@ class _ClaimRecordScreenState extends State<ClaimRecordScreen> {
         _verifiedData = result;
         _activeToken = result['claimToken'] ?? clean;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Profile verified for ${result['details']?['fullName'] ?? 'User'}!'),
-          backgroundColor: AppColors.success,
-        ),
+      _showToast(
+        'Profile verified for ${result['details']?['fullName'] ?? 'User'}!',
+        bg: AppColors.success,
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(authProvider.errorMessage ?? 'Invalid claim token or QR code'),
-          backgroundColor: AppColors.error,
-        ),
+      _showToast(
+        authProvider.errorMessage ?? 'Invalid claim token or QR code',
+        bg: AppColors.error,
       );
     }
   }
@@ -257,22 +252,12 @@ class _ClaimRecordScreenState extends State<ClaimRecordScreen> {
     if (!_setupFormKey.currentState!.validate()) return;
 
     if (!_isPasswordValid) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password does not meet security requirements.'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      _showToast('Password does not meet security requirements.', bg: AppColors.error);
       return;
     }
 
     if (_passwordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Passwords do not match'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      _showToast('Passwords do not match', bg: AppColors.error);
       return;
     }
 
@@ -288,11 +273,9 @@ class _ClaimRecordScreenState extends State<ClaimRecordScreen> {
     if (!mounted) return;
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Account created and profile linked successfully! Welcome to MilkLink.'),
-          backgroundColor: AppColors.success,
-        ),
+      _showToast(
+        'Account created and profile linked successfully!',
+        bg: AppColors.success,
       );
 
       final user = authProvider.user;
@@ -310,76 +293,108 @@ class _ClaimRecordScreenState extends State<ClaimRecordScreen> {
         );
       }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(authProvider.errorMessage ?? 'Account binding failed'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      _showToast(authProvider.errorMessage ?? 'Account binding failed', bg: AppColors.error);
     }
   }
 
-  Widget _buildPolicyRow(String text, bool met) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+  // ───────────────────────────────────────────────────────────────────────────
+  // UI COMPONENTS
+  // ───────────────────────────────────────────────────────────────────────────
+
+  Widget _buildHeader() {
+    return Column(
+      children: [
+        // Top Back Button
+        Align(
+          alignment: Alignment.centerLeft,
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppColors.primaryNavy),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        // Small Logo
+        Center(
+          child: Image.asset(
+            'assets/images/milklink_logo.png',
+            height: 72,
+            fit: BoxFit.contain,
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Title
+        Text(
+          _isVerified ? 'Create Your Login' : 'Claim Your Account',
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            color: AppColors.primaryNavy,
+          ),
+        ),
+        const SizedBox(height: 4),
+
+        // Subtitle
+        Text(
+          _isVerified
+              ? 'Choose your username and password'
+              : 'Scan your QR code or enter your token',
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 13,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _buildMethodSelector() {
+    return Container(
+      height: 44,
+      decoration: BoxDecoration(
+        color: AppColors.softBlue,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      padding: const EdgeInsets.all(3),
       child: Row(
         children: [
-          Icon(
-            met ? Icons.check_circle : Icons.circle_outlined,
-            size: 14,
-            color: met ? AppColors.success : AppColors.textSecondary,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 12,
-              color: met ? AppColors.success : AppColors.textSecondary,
-            ),
-          ),
+          _buildMethodTab(ClaimInputMethod.qrScan, 'Scan QR'),
+          _buildMethodTab(ClaimInputMethod.manualToken, 'Enter Token'),
         ],
       ),
     );
   }
 
-  Widget _buildMethodTab({
-    required ClaimInputMethod method,
-    required IconData icon,
-    required String label,
-  }) {
-    final selected = _inputMethod == method;
+  Widget _buildMethodTab(ClaimInputMethod method, String label) {
+    final isSelected = _inputMethod == method;
     return Expanded(
       child: GestureDetector(
         onTap: () => _switchMethod(method),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: selected ? AppColors.primaryNavy : Colors.transparent,
-            borderRadius: BorderRadius.circular(9),
+            color: isSelected ? AppColors.primaryBlue : Colors.transparent,
+            borderRadius: BorderRadius.circular(11),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 18, color: selected ? Colors.white : AppColors.textPrimary),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: selected ? Colors.white : AppColors.textPrimary,
-                ),
-              ),
-            ],
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: isSelected ? Colors.white : AppColors.textSecondary,
+            ),
           ),
         ),
       ),
     );
   }
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // VIEW 1: CLAIM VERIFICATION (Camera / Image Upload OR Manual Token Input)
-  // ───────────────────────────────────────────────────────────────────────────
 
   Widget _buildCameraError(MobileScannerException error) {
     final denied = error.errorCode == MobileScannerErrorCode.permissionDenied;
@@ -390,12 +405,12 @@ class _ClaimRecordScreenState extends State<ClaimRecordScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.no_photography_outlined, color: Colors.white70, size: 40),
-            const SizedBox(height: 12),
+            const Icon(Icons.no_photography_outlined, color: Colors.white70, size: 36),
+            const SizedBox(height: 10),
             Text(
               denied
-                  ? 'Camera permission is turned off. Enable it in your phone settings, or upload a QR image instead.'
-                  : 'Camera is unavailable. You can upload a QR image or enter the token instead.',
+                  ? 'Camera permission denied. Enable it in settings or upload a QR image.'
+                  : 'Camera unavailable. Upload a QR image or enter token below.',
               textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.white, fontSize: 12, height: 1.4),
             ),
@@ -405,22 +420,29 @@ class _ClaimRecordScreenState extends State<ClaimRecordScreen> {
     );
   }
 
-  Widget _buildQrScannerCard() {
-  return Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: AppColors.border),
-    ),
-    child: Column(
+  Widget _buildScannerIconButton({required IconData icon, required VoidCallback onTap}) {
+    return Material(
+      color: Colors.black54,
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Icon(icon, color: Colors.white, size: 18),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQrScannerView() {
+    return Column(
       children: [
-        // Live camera preview
+        // Camera Preview directly with rounded corners
         ClipRRect(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           child: SizedBox(
-            height: 280,
+            height: 240,
             width: double.infinity,
             child: Stack(
               fit: StackFit.expand,
@@ -428,46 +450,26 @@ class _ClaimRecordScreenState extends State<ClaimRecordScreen> {
                 MobileScanner(
                   controller: _scannerController,
                   onDetect: _onDetect,
-                  // 7.x signature: (context, error)
                   errorBuilder: (context, error) => _buildCameraError(error),
                 ),
-                // Reticle
+                // Clean white reticle
                 Center(
                   child: Container(
-                    width: 200,
-                    height: 200,
+                    width: 170,
+                    height: 170,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white, width: 3),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.white, width: 2.5),
                     ),
                   ),
                 ),
-                // Hint label
-                Positioned(
-                  top: 12,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryNavy.withValues(alpha: 0.8),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Text(
-                        'Align QR Code in frame',
-                        style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
-                ),
-                // Torch + flip camera
+                // Torch & Flip buttons
                 Positioned(
                   bottom: 10,
                   right: 10,
                   child: Row(
                     children: [
-                      _scannerIconButton(
+                      _buildScannerIconButton(
                         icon: _torchOn ? Icons.flash_on : Icons.flash_off,
                         onTap: () async {
                           try {
@@ -477,7 +479,7 @@ class _ClaimRecordScreenState extends State<ClaimRecordScreen> {
                         },
                       ),
                       const SizedBox(width: 8),
-                      _scannerIconButton(
+                      _buildScannerIconButton(
                         icon: Icons.cameraswitch_outlined,
                         onTap: () async {
                           try {
@@ -488,7 +490,7 @@ class _ClaimRecordScreenState extends State<ClaimRecordScreen> {
                     ],
                   ),
                 ),
-                // Verifying overlay
+                // Loading overlay
                 if (_isVerifying)
                   Container(
                     color: Colors.black54,
@@ -500,309 +502,246 @@ class _ClaimRecordScreenState extends State<ClaimRecordScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 14),
-        const Text(
-          'Point your camera at the QR code provided by Milk Bank staff.',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
 
-        Row(
-          children: const [
-            Expanded(child: Divider()),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 10),
-              child: Text('OR', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+        // Text link for gallery upload
+        Center(
+          child: TextButton(
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            Expanded(child: Divider()),
-          ],
-        ),
-        const SizedBox(height: 16),
-
-        // Upload QR image from gallery
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
             onPressed: _isVerifying ? null : _pickQrFromGallery,
-            icon: const Icon(Icons.image_outlined, color: AppColors.primaryNavy),
-            label: const Text(
-              'Upload QR Code Image',
-              style: TextStyle(color: AppColors.primaryNavy, fontWeight: FontWeight.bold),
-            ),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              side: const BorderSide(color: AppColors.primaryNavy),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: const Text(
+              'Upload QR image instead',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primaryBlue,
+              ),
             ),
           ),
         ),
       ],
-    ),
-  );
-}
+    );
+  }
 
-  Widget _scannerIconButton({required IconData icon, required VoidCallback onTap}) {
-    return Material(
-      color: Colors.black54,
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Icon(icon, color: Colors.white, size: 20),
+  Widget _buildManualTokenView() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextFormField(
+          controller: _tokenController,
+          textCapitalization: TextCapitalization.characters,
+          style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+          decoration: InputDecoration(
+            hintText: 'Claim token',
+            prefixIcon: const Icon(Icons.vpn_key_outlined, size: 20),
+            suffixIcon: IconButton(
+              tooltip: 'Paste',
+              icon: const Icon(Icons.content_paste, size: 20),
+              onPressed: _pasteIntoTokenField,
+            ),
+          ),
         ),
-      ),
+        const SizedBox(height: 16),
+
+        SizedBox(
+          height: 52,
+          child: ElevatedButton(
+            onPressed: _isVerifying
+                ? null
+                : () => _handleVerifyToken(_extractToken(_tokenController.text)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryBlue,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+            child: _isVerifying
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
+                : const Text(
+                    'Verify Token',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                  ),
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildClaimVerificationView() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Information Banner
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.softBlue,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.35)),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(Icons.verified_user_outlined, color: AppColors.primaryNavy, size: 28),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      'Hospital Intake Onboarding',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primaryNavy),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Account profiles are created by Pasig Human Milk Bank staff. Use your official QR Code or Claim Token to activate your account.',
-                      style: TextStyle(fontSize: 12, color: AppColors.textPrimary, height: 1.35),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
-
-        // Method Selector
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
-          ),
-          padding: const EdgeInsets.all(4),
-          child: Row(
-            children: [
-              _buildMethodTab(
-                method: ClaimInputMethod.qrScan,
-                icon: Icons.qr_code_scanner,
-                label: 'Scan QR Code',
-              ),
-              _buildMethodTab(
-                method: ClaimInputMethod.manualToken,
-                icon: Icons.tag,
-                label: 'Enter Token',
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
-
-        // METHOD 1: CAMERA SCAN / IMAGE UPLOAD
+        _buildMethodSelector(),
+        const SizedBox(height: 20),
         if (_inputMethod == ClaimInputMethod.qrScan)
-          _buildQrScannerCard()
-
-        // METHOD 2: ENTER CLAIM TOKEN MANUALLY
+          _buildQrScannerView()
         else
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '16-Character Claim Token',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.primaryNavy),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Type or paste the 16-character code found on your screening intake slip.',
-                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 16),
-                CustomTextField(
-                  label: 'Claim Token *',
-                  hint: 'e.g. B47AF901D2E45C89',
-                  controller: _tokenController,
-                  prefixIcon: const Icon(Icons.vpn_key_outlined, color: AppColors.primaryNavy),
-                  suffixIcon: IconButton(
-                    tooltip: 'Paste',
-                    icon: const Icon(Icons.content_paste, color: AppColors.primaryNavy),
-                    onPressed: _pasteIntoTokenField,
-                  ),
-                  textCapitalization: TextCapitalization.characters,
-                ),
-                const SizedBox(height: 20),
-                CustomButton(
-                  text: 'Verify Claim Token',
-                  isLoading: _isVerifying,
-                  onPressed: () => _handleVerifyToken(_extractToken(_tokenController.text)),
-                ),
-              ],
-            ),
-          ),
+          _buildManualTokenView(),
       ],
     );
   }
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // VIEW 2: STREAMLINED ACCOUNT SETUP (Verified Identity + Credentials)
-  // ───────────────────────────────────────────────────────────────────────────
+  Widget _buildPolicyInline() {
+    if (!_passwordFocus.hasFocus && _passwordController.text.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 4),
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 4,
+        children: [
+          _buildPolicyItem('8+ chars', _hasMinLength),
+          _buildPolicyItem('A-Z', _hasUppercase),
+          _buildPolicyItem('a-z', _hasLowercase),
+          _buildPolicyItem('0-9', _hasDigit),
+          _buildPolicyItem('symbol', _hasSpecial),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPolicyItem(String text, bool met) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        color: met ? AppColors.success : AppColors.textSecondary,
+      ),
+    );
+  }
 
   Widget _buildAccountSetupView() {
     final details = _verifiedData?['details'] as Map<String, dynamic>? ?? {};
-    final profileType = _verifiedData?['profileType'] ?? 'Record';
     final fullName = details['fullName'] ?? 'Medical Member';
     final contactPhone = details['contactPhone'] ?? '—';
     final addressSnippet = details['addressSnippet'] ?? 'Pasig City';
-
     final authProvider = Provider.of<AuthProvider>(context);
+    final isLoading = authProvider.status == AuthStatus.loading;
 
     return Form(
       key: _setupFormKey,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 1. Verified Record Confirmation Banner
+          // Compact softBlue verified card
           Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: AppColors.successBg,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.success.withValues(alpha: 0.4)),
+              color: AppColors.softBlue,
+              borderRadius: BorderRadius.circular(16),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.check_circle, color: AppColors.success, size: 22),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Verified $profileType Record Found',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.success),
-                    ),
-                    const Spacer(),
-                    TextButton(
-                      style: TextButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        padding: EdgeInsets.zero,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        fullName,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryNavy,
+                        ),
                       ),
-                      onPressed: () {
-                        setState(() {
-                          _isVerified = false;
-                          _lastScannedValue = null;
-                          _lastScannedAt = null;
-                        });
-                        if (_inputMethod == ClaimInputMethod.qrScan) _startScanner();
-                      },
-                      child: const Text('Change', style: TextStyle(fontSize: 12, color: AppColors.primaryNavy)),
-                    ),
-                  ],
+                      const SizedBox(height: 2),
+                      Text(
+                        '$contactPhone · $addressSnippet',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                const Divider(height: 16),
-                Text(
-                  fullName,
-                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.primaryNavy),
-                ),
-                const SizedBox(height: 4),
-                Text('Phone: $contactPhone', style: const TextStyle(fontSize: 13, color: AppColors.textPrimary)),
-                Text('Address: $addressSnippet', style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-                if (details['screeningStatus'] != null) ...[
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.success.withValues(alpha: 0.5)),
-                    ),
-                    child: Text(
-                      'Status: ${details['screeningStatus']}',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primaryNavy),
+                TextButton(
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isVerified = false;
+                      _lastScannedValue = null;
+                      _lastScannedAt = null;
+                    });
+                    if (_inputMethod == ClaimInputMethod.qrScan) _startScanner();
+                  },
+                  child: const Text(
+                    'Change',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primaryBlue,
                     ),
                   ),
-                ],
+                ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
-          const Text(
-            'Create Your Login Credentials',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primaryNavy),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Your personal information and medical intake records are already securely stored. Choose your login credentials below:',
-            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: 18),
-
-          // Username Field
-          CustomTextField(
-            label: 'Username *',
-            hint: 'e.g. maria_delacruz',
+          // Username
+          TextFormField(
             controller: _usernameController,
-            prefixIcon: const Icon(Icons.alternate_email, color: AppColors.primaryNavy),
+            style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+            decoration: const InputDecoration(
+              hintText: 'Username *',
+              prefixIcon: Icon(Icons.alternate_email, size: 20),
+            ),
             validator: (v) {
               if (v == null || v.trim().isEmpty) return 'Username is required';
               if (v.trim().length < 4) return 'Username must be at least 4 characters';
               if (!RegExp(r'^[a-zA-Z0-9_.-]+$').hasMatch(v.trim())) {
-                return 'Only alphanumeric characters, _, . or - allowed';
+                return 'Only alphanumeric, _, . or - allowed';
               }
               return null;
             },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
-          // Email Field (Optional)
-          CustomTextField(
-            label: 'Email Address (Optional)',
-            hint: 'Optional — for milk release & status notifications',
+          // Email (optional)
+          TextFormField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
-            prefixIcon: const Icon(Icons.mail_outline, color: AppColors.textSecondary),
+            style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+            decoration: const InputDecoration(
+              hintText: 'Email (optional)',
+              prefixIcon: Icon(Icons.mail_outline, size: 20),
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
-          // Password Field
-          CustomTextField(
-            label: 'Password *',
-            hint: 'Create a secure password',
+          // Password
+          TextFormField(
             controller: _passwordController,
+            focusNode: _passwordFocus,
             obscureText: _obscurePassword,
-            prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primaryNavy),
-            suffixIcon: IconButton(
-              icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+            style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+            decoration: InputDecoration(
+              hintText: 'Password *',
+              prefixIcon: const Icon(Icons.lock_outline, size: 20),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  size: 20,
+                ),
+                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              ),
             ),
             validator: (v) {
               if (v == null || v.isEmpty) return 'Password is required';
@@ -810,55 +749,58 @@ class _ClaimRecordScreenState extends State<ClaimRecordScreen> {
               return null;
             },
           ),
+
+          // Password checklist inline
+          _buildPolicyInline(),
           const SizedBox(height: 8),
 
-          // Password Policy Card
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildPolicyRow('At least 8 characters long', _hasMinLength),
-                _buildPolicyRow('At least one uppercase letter (A-Z)', _hasUppercase),
-                _buildPolicyRow('At least one lowercase letter (a-z)', _hasLowercase),
-                _buildPolicyRow('At least one number (0-9)', _hasDigit),
-                _buildPolicyRow('At least one special symbol (!@#\$%^&*)', _hasSpecial),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Confirm Password Field
-          CustomTextField(
-            label: 'Confirm Password *',
-            hint: 'Re-enter your password',
+          // Confirm Password
+          TextFormField(
             controller: _confirmPasswordController,
             obscureText: _obscureConfirm,
-            prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primaryNavy),
-            suffixIcon: IconButton(
-              icon: Icon(_obscureConfirm ? Icons.visibility_off : Icons.visibility),
-              onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+            style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+            decoration: InputDecoration(
+              hintText: 'Confirm Password *',
+              prefixIcon: const Icon(Icons.lock_outline, size: 20),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  size: 20,
+                ),
+                onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+              ),
             ),
             validator: (v) {
-              if (v == null || v.isEmpty) return 'Please confirm your password';
+              if (v == null || v.isEmpty) return 'Please confirm password';
               if (v != _passwordController.text) return 'Passwords do not match';
               return null;
             },
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
-          // Submit & Link Button
-          CustomButton(
-            text: 'Activate & Link My Account',
-            isLoading: authProvider.status == AuthStatus.loading,
-            onPressed: _handleFinalAccountBinding,
+          // Submit Button
+          SizedBox(
+            height: 52,
+            child: ElevatedButton(
+              onPressed: isLoading ? null : _handleFinalAccountBinding,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryBlue,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              child: isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text(
+                      'Activate Account',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                    ),
+            ),
           ),
-          const SizedBox(height: 16),
         ],
       ),
     );
@@ -866,18 +808,43 @@ class _ClaimRecordScreenState extends State<ClaimRecordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final waveHeight = MediaQuery.sizeOf(context).height * 0.16;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(_isVerified ? 'Setup Account Credentials' : 'Link MilkLink Profile'),
-        backgroundColor: Colors.white,
-        foregroundColor: AppColors.primaryNavy,
-        elevation: 0,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          child: _isVerified ? _buildAccountSetupView() : _buildClaimVerificationView(),
+      resizeToAvoidBottomInset: false,
+      backgroundColor: Colors.white,
+      body: SizedBox.expand(
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Pinned bottom wave (behind content)
+            const Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: WaveFooter(),
+            ),
+
+            // Main scrollable content
+            SafeArea(
+              child: SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                padding: EdgeInsets.only(
+                  left: 24,
+                  right: 24,
+                  top: 12,
+                  bottom: waveHeight + 16,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildHeader(),
+                    _isVerified ? _buildAccountSetupView() : _buildClaimVerificationView(),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
