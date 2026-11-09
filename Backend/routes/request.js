@@ -32,6 +32,7 @@ const staffAndAdmin = [isAuthenticatedUser, authorizeRoles('SuperAdmin', 'Admin'
 // Donor Milk Request Routes
 router.post('/donor/request-milk', isAuthenticatedUser, donorSubmitMilkRequest);
 router.get('/donor/my-requests', isAuthenticatedUser, getMyMilkRequests);
+router.get('/requests/mine', isAuthenticatedUser, getMyMilkRequests);
 
 // Staff and Admin routes
 router.get('/requests/archived', ...staffAndAdmin, archivedRequests);

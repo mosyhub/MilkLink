@@ -10,6 +10,22 @@ const catchAsyncErrors = require("../middlewares/catchAsyncErrors");
 const cloudinary = require("cloudinary");
 const mongoose = require("mongoose");
 
+const getUserDisplayName = (user, fallback = "Donor") => {
+  if (typeof user?.fullName === "string" && user.fullName.trim()) {
+    return user.fullName.trim();
+  }
+  if (user?.fullName && typeof user.fullName === "object") {
+    const first = user.fullName.first || "";
+    const last = user.fullName.last || "";
+    const name = `${first} ${last}`.trim();
+    if (name) return name;
+  }
+  if (typeof user?.username === "string" && user.username.trim()) {
+    return user.username.trim();
+  }
+  return fallback;
+};
+
 // Helper to notify a user
 const sendNotification = async (userId, title, body) => {
   if (!userId) return;
@@ -223,7 +239,6 @@ exports.getRequestDetails = catchAsyncErrors(async (req, res, next) => {
 exports.donorSubmitMilkRequest = catchAsyncErrors(async (req, res, next) => {
   const {
     recipientName,
-    recipientDob,
     relationToRecipient = "Mother / Guardian",
     hospitalOrHomeAddress,
     reasonForRequest,
@@ -236,34 +251,28 @@ exports.donorSubmitMilkRequest = catchAsyncErrors(async (req, res, next) => {
     return next(new ErrorHandler("Please provide recipient name, requested volume, and reason", 400));
   }
 
-  let patient = await Patient.findOne({
-    "name.first": recipientName.split(" ")[0],
-    "name.last": recipientName.split(" ").slice(1).join(" ") || "Child"
-  });
-
-  if (!patient) {
-    patient = await Patient.create({
-      name: {
-        first: recipientName.split(" ")[0],
-        last: recipientName.split(" ").slice(1).join(" ") || "Child"
-      },
-      patientType: "Outpatient",
-      diagnosis: reasonForRequest,
-      birthday: recipientDob ? new Date(recipientDob) : new Date(),
-      home_address: {
-        street: hospitalOrHomeAddress || "Pasig City",
-        brgy: "Community",
-        city: "Pasig City"
-      }
-    });
-  }
-
   const vol = Number(volumeRequested) || 0;
   const days = Number(feedingDurationDays) || 7;
+  const patientName = recipientName.trim();
+  const patientAddress = hospitalOrHomeAddress?.trim() || "Pasig City";
+  const patient = await Patient.create({
+    user: req.user?._id || null,
+    name: patientName,
+    motherName: getUserDisplayName(req.user, "Mother / Guardian"),
+    phone: req.user?.phone || "00000000000",
+    patientType: "Outpatient",
+    home_address: {
+      street: patientAddress,
+      brgy: "Community",
+      city: "Pasig City",
+    },
+    staff: req.user?._id,
+    requested: [],
+  });
 
   const newRequest = await Request.create({
     patient: patient._id,
-    recipientName: recipientName.trim(),
+    recipientName: patientName,
     relationToRecipient,
     requestedBy: req.user ? req.user._id : null,
     volumeRequested: {
@@ -281,7 +290,7 @@ exports.donorSubmitMilkRequest = catchAsyncErrors(async (req, res, next) => {
       {
         action: "SUBMITTED",
         actor: req.user?._id,
-        actorName: req.user?.fullName || req.user?.username || "Donor",
+        actorName: getUserDisplayName(req.user),
         timestamp: new Date(),
         notes: `Submitted request for ${vol} ml.`
       }
@@ -294,14 +303,14 @@ exports.donorSubmitMilkRequest = catchAsyncErrors(async (req, res, next) => {
   // Notify Admins & Staff
   await notifyStaffAndAdmins(
     "New Milk Request",
-    `A new milk request for ${recipientName} (${vol} mL) was submitted by ${req.user?.fullName || "a donor"}.`
+    `A new milk request for ${recipientName} (${vol} mL) was submitted by ${getUserDisplayName(req.user, "a donor")}.`
   );
 
   // Audit
   await createAudit({
     action: "CREATE_REQUEST",
     user: req.user?._id,
-    userName: req.user?.fullName || req.user?.username,
+    userName: getUserDisplayName(req.user),
     targetId: newRequest._id,
     reason: "Submitted by donor"
   });
@@ -888,7 +897,12 @@ exports.deleteRequest = catchAsyncErrors(async (req, res, next) => {
 exports.getMyMilkRequests = catchAsyncErrors(async (req, res, next) => {
   if (!req.user) return next(new ErrorHandler("Authentication required", 401));
 
-  const requests = await Request.find({ requestedBy: req.user._id, isDeleted: false })
+  const requests = await Request.find({
+    requestedBy: req.user._id,
+    isDeleted: false,
+  })
+    .populate("patient", "name patientType")
+    .populate("requestedBy", "name username phone email role")
     .populate("clinicalReview.reviewedBy", "name username role")
     .sort({ createdAt: -1 });
 
