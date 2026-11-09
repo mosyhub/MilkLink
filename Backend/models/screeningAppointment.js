@@ -44,7 +44,7 @@ const screeningAppointmentSchema = new mongoose.Schema({
   hospital: {
     name: {
       type: String,
-      default: 'Pasig City Human Milk Bank / Pasig-Pateros District Hospital',
+      default: 'Pasig City Human Milk Bank / Pasig City General Hospital',
     },
     room: {
       type: String,

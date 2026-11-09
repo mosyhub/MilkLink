@@ -342,7 +342,7 @@ exports.createRequest = catchAsyncErrors(async (req, res, next) => {
       days: days
     },
     approvedVolume: vol,
-    hospital: hospitalOrHomeAddress || "Pasig-Pateros District Hospital",
+    hospital: hospitalOrHomeAddress || "Pasig City General Hospital",
     reason: reasonForRequest,
     additionalRemarks,
     status: "Pending",

@@ -46,7 +46,7 @@ async function runUnificationTests() {
     const { rawToken, tokenHash, expiresAt, qrCodeData } = await generateClaimCredentials('Donor');
 
     staffCreatedDonor = await Donor.create({
-      donorId: `DEDE1-2026-${testSuffix}`,
+      donorId: `2026-${testSuffix}`,
       user: null, // Unclaimed
       staff: staffUser._id,
       name: { first: 'Elena', last: 'Reyes' },
@@ -214,7 +214,7 @@ async function runUnificationTests() {
     try {
       // Attempting to link another donor to the same user
       const secondDonor = new Donor({
-        donorId: `DEDE1-2026-CONFLICT-${testSuffix}`,
+        donorId: `2026-CONFLICT-${testSuffix}`,
         user: tempUser._id, // Duplicate link to same user
         name: { first: 'Clone', last: 'Donor' },
         birthday: new Date('1990-01-01'),

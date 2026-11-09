@@ -174,7 +174,7 @@ async function runTests() {
 
     // Create donor record with authorized 'Eligible' status
     testDonor = await Donor.create({
-      donorId: `DEDE1-2026-${testSuffix}`,
+      donorId: `2026-${testSuffix}`,
       user: createdUser._id,
       name: { first: createdUser.name.first, last: createdUser.name.last },
       birthday: new Date('1995-05-15'),
@@ -205,7 +205,7 @@ async function runTests() {
     // ------------------------------------------------------------------------
     console.log('\n--- TEST 10: Ineligible Donor Donation Restriction Check ---');
     const deferredDonor = await Donor.create({
-      donorId: `DEDE1-2026-DEF${testSuffix}`,
+      donorId: `2026-DEF${testSuffix}`,
       name: { first: 'Ineligible', last: 'Candidate' },
       birthday: new Date('1998-01-01'),
       home_address: { street: 'Street', brgy: 'Kapitolyo', city: 'Pasig City' },

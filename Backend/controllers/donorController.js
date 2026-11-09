@@ -546,10 +546,10 @@ exports.getStaffDonorDashboard = catchAsyncErrors(async (req, res, next) => {
     });
 });
 
-// Helper: Generate Sequential Pasig Human Milk Bank Donor ID (e.g. DEDE1-2026-0001)
+// Helper: Generate Sequential Pasig Human Milk Bank Donor ID (e.g. 2026-0001)
 const generatePasigDonorId = async () => {
     const year = new Date().getFullYear();
-    const prefix = `DEDE1-${year}-`;
+    const prefix = `${year}-`;
     const lastDonor = await Donor.findOne({ donorId: new RegExp(`^${prefix}`) })
         .sort({ donorId: -1 })
         .select('donorId');
@@ -565,7 +565,7 @@ const generatePasigDonorId = async () => {
     return `${prefix}${String(sequence).padStart(4, '0')}`;
 };
 
-// First-Time Donor Registration (DEDE1 simplified workflow) => /api/v1/donor/register
+// First-Time Donor Registration (simplified workflow) => /api/v1/donor/register
 exports.registerFirstTimeDonor = catchAsyncErrors(async (req, res, next) => {
     const {
         firstName,
@@ -687,7 +687,7 @@ exports.registerFirstTimeDonor = catchAsyncErrors(async (req, res, next) => {
 
     res.status(201).json({
         success: true,
-        message: "First-time donor registered successfully under Pasig City Human Milk Bank DEDE1 workflow.",
+        message: "First-time donor registered successfully under Pasig City Human Milk Bank workflow.",
         donorId: donor.donorId,
         qrCodeData: donor.qrCodeData,
         claimToken: rawToken,
@@ -721,8 +721,8 @@ exports.searchReturningDonor = catchAsyncErrors(async (req, res, next) => {
             { submissionID: cleanQuery }
         ]
     })
-    .select('donorId name birthday contact_number home_address donorType eligibility verified donations user createdAt')
-    .limit(10);
+        .select('donorId name birthday contact_number home_address donorType eligibility verified donations user createdAt')
+        .limit(10);
 
     res.status(200).json({
         success: true,

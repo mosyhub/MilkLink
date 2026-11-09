@@ -69,7 +69,7 @@ const requestSchema = new mongoose.Schema({
   },
   hospital: {
     type: String,
-    default: "Pasig-Pateros District Hospital",
+    default: "Pasig City General Hospital",
   },
   department: {
     type: String,

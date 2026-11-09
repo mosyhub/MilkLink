@@ -4,7 +4,7 @@ const ErrorHandler = require('../utils/errorHandler');
 const catchAsyncErrors = require('../middlewares/catchAsyncErrors');
 
 // Hospital-approved Standard Pasig City Human Milk Bank Consent Text
-const PASIG_HMB_CONSENT_TEXT = `PASIG CITY HUMAN MILK BANK - ELECTRONIC DONOR CONSENT (DEDE1)
+const PASIG_HMB_CONSENT_TEXT = `PASIG CITY HUMAN MILK BANK - ELECTRONIC DONOR CONSENT ()
 
 1. I voluntarily agree to donate my excess breast milk to the Pasig City Human Milk Bank (MilkLink).
 2. I certify that all personal, health, and medical information provided in my screening questionnaire is true and accurate.
