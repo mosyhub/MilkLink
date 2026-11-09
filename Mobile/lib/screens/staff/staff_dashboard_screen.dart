@@ -20,6 +20,9 @@ import 'staff_screening_appointments_screen.dart';
 import 'pending_registrations_screen.dart';
 import '../schedules/schedules_screen.dart';
 import '../inventory/inventory_screen.dart';
+import '../content/content_management_screen.dart';
+import '../requests/milk_requests_screen.dart';
+import '../metrics/metrics_dashboard_screen.dart';
 
 /// Which section of the staff portal is currently open.
 /// null = the card-grid dashboard (home).
@@ -905,7 +908,12 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                 icon: Icons.assignment,
                 label: 'Milk Requests',
                 count: staffProvider.activeRequests.length,
-                onTap: () => _openSection(StaffSection.requests),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const MilkRequestsScreen()),
+                  );
+                },
               ),
               _buildDashboardCard(
                 icon: Icons.person_search,

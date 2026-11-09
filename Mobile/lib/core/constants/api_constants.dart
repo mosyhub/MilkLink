@@ -120,4 +120,32 @@ class ApiConstants {
   static String bookedSlots(String date, {String? excludeId}) =>
       '$baseUrl/schedules/booked-slots?date=$date${excludeId != null ? '&excludeId=$excludeId' : ''}';
   static String get adminMetrics => '$baseUrl/metrics';
+
+  // ── Content Management – Articles ──────────────────────────────────────────
+  static String articleById(String id) => '$baseUrl/article/$id';
+  static String articleArchive(String id) => '$baseUrl/article/archive/$id';
+  static String articleRestore(String id) => '$baseUrl/article/restore/$id';
+
+  // ── Content Management – Announcements ────────────────────────────────────
+  static String announcementById(String id) => '$baseUrl/announcement/$id';
+  static String announcementArchive(String id) => '$baseUrl/announcement/archive/$id';
+  static String announcementRestore(String id) => '$baseUrl/announcement/restore/$id';
+
+  // ── Milk Request Workflow Actions ─────────────────────────────────────────
+  static String requestStartReview(String id) => '$baseUrl/request/$id/start-review';
+  static String requestRecordReview(String id) => '$baseUrl/request/$id/record-review';
+  static String requestApprove(String id) => '$baseUrl/request/$id/approve';
+  static String requestReject(String id) => '$baseUrl/request/$id/reject';
+  static String requestFulfill(String id) => '$baseUrl/request/$id/fulfill';
+  static String requestCancel(String id) => '$baseUrl/request/$id/cancel';
+
+  // ── Dashboard Metrics ─────────────────────────────────────────────────────
+  static String get dashboardMetrics => '$baseUrl/dashboard/metrics';
+
+  // ── Account Management (Admin) ────────────────────────────────────────────
+  static String get adminAccounts => '$baseUrl/admin/accounts';
+  static String adminAccountById(String id) => '$baseUrl/admin/account/$id';
+  static String adminAccountRole(String id) => '$baseUrl/admin/account/$id/role';
+  static String adminAccountDeactivate(String id) => '$baseUrl/admin/account/$id/deactivate';
+  static String adminAccountReactivate(String id) => '$baseUrl/admin/account/$id/reactivate';
 }

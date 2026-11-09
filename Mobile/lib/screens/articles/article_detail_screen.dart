@@ -28,9 +28,9 @@ class ArticleDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (article.imageUrl != null && article.imageUrl!.isNotEmpty)
+            if (article.firstImageUrl != null && article.firstImageUrl!.isNotEmpty)
               Image.network(
-                article.imageUrl!,
+                article.firstImageUrl!,
                 width: double.infinity,
                 height: 220,
                 fit: BoxFit.cover,
@@ -50,10 +50,10 @@ class ArticleDetailScreen extends StatelessWidget {
                       height: 1.3,
                     ),
                   ),
-                  if (article.createdAt != null) ...[
+                  ...[
                     const SizedBox(height: 8),
                     Text(
-                      'Published on ${DateFormat("MMMM d, yyyy").format(article.createdAt!)}',
+                      'Published on ${DateFormat("MMMM d, yyyy").format(article.createdAt)}',
                       style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
                     ),
                   ],

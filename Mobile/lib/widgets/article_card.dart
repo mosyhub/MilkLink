@@ -30,11 +30,11 @@ class ArticleCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (article.imageUrl != null && article.imageUrl!.isNotEmpty)
+            if (article.firstImageUrl != null && article.firstImageUrl!.isNotEmpty)
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                 child: Image.network(
-                  article.imageUrl!,
+                  article.firstImageUrl!,
                   height: 140,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -83,10 +83,10 @@ class ArticleCard extends StatelessWidget {
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  if (article.createdAt != null) ...[
+                  if (true) ...[
                     const SizedBox(height: 8),
                     Text(
-                      DateFormat('MMM d, yyyy').format(article.createdAt!),
+                      DateFormat('MMM d, yyyy').format(article.createdAt),
                       style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
                     ),
                   ]

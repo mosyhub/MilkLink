@@ -112,7 +112,7 @@ class ArticlesScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                ann.body.replaceAll(RegExp(r'<[^>]*>'), ''),
+                                ann.description.replaceAll(RegExp(r'<[^>]*>'), ''),
                                 style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
                               ),
                             ],

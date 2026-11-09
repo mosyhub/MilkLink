@@ -16,6 +16,11 @@ import '../staff/dialogs/donor_form_dialog.dart';
 import '../staff/dialogs/patient_form_dialog.dart';
 import '../schedules/schedules_screen.dart';
 import '../inventory/inventory_screen.dart';
+import '../accounts/account_management_screen.dart';
+import '../content/content_management_screen.dart';
+import '../requests/milk_requests_screen.dart';
+import '../metrics/metrics_dashboard_screen.dart';
+
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -470,6 +475,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     }
     if (module == AdminModule.inventory) {
       return const InventoryScreen();
+    }
+    if (module == AdminModule.accounts) {
+      return const AccountManagementScreen();
+    }
+    if (module == AdminModule.content) {
+      return const ContentManagementScreen();
+    }
+    if (module == AdminModule.requests) {
+      return const MilkRequestsScreen();
+    }
+    if (module == AdminModule.metrics) {
+      return const MetricsDashboardScreen();
     }
     if (module == AdminModule.donors || module == AdminModule.recipients) {
       return _buildStaffRecordsModule(staffProvider, module);

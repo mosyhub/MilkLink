@@ -24,6 +24,8 @@ class AuthProvider extends ChangeNotifier {
   UserModel? get user => _user;
   String? get errorMessage => _errorMessage;
   bool get isAuthenticated => _status == AuthStatus.authenticated && _user != null;
+  bool get isAdmin => _user?.isAdmin ?? false;
+  bool get isStaff => _user?.isStaff ?? false;
 
   String get accountStatus => _accountStatus;
   String get donorRegistrationStatus => _donorRegistrationStatus;
